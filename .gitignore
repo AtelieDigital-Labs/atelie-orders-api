@@ -11,3 +11,4 @@ __pycache__/
 
 # Arquivos de ambiente local
 .env
+orders_dev.db
