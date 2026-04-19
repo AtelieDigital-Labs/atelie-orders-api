@@ -27,7 +27,7 @@ test = "pytest -v"
 # --- Configuração do Ruff ---
 [tool.ruff]
 line-length = 88
-target-version = "py31212" # Ajuste para a versão do Python que está usando
+target-version = "py312" 
 
 [tool.ruff.format]
 preview = true
