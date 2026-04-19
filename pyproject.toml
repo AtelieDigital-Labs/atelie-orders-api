@@ -24,6 +24,7 @@ run = "fastapi dev app/main.py"
 lint = "ruff check . && ruff format --check ."
 format = "ruff check --fix . && ruff format ."
 test = "pytest -v"
+alembic = "alembic upgrade head"
 
 # --- Configuração do Ruff ---
 [tool.ruff]

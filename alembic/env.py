@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.core.database import Base
 
-# from app.models.cart import Cart, CartItem
+from app.models.cart import Cart, CartItem
 from app.models.order import Order, OrderItem
 
 # this is the Alembic Config object, which provides
