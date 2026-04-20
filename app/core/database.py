@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import create_engine, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Mapped, mapped_column
-from app.core.config import settings
+from core.config import settings
 
 # Quando mudar para PostgreSQL, o connect_args pode ser removido.
 engine = create_engine(
@@ -18,9 +18,9 @@ class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
-def get_db():
-    db = SessionLocal()
+def get_session():
+    session = SessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()

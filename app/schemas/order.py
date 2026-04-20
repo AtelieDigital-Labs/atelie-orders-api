@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from decimal import Decimal
-import datetime
-from app.models.order import OrderStatus
+from datetime import datetime
+from models.order import OrderStatus
 
 
 # ORDER ITEM

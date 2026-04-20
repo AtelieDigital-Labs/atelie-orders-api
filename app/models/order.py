@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy import create_engine, Integer, Enum, DateTime, DECIMAL, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from app.core.database import Base, TimestampMixin
+from core.database import Base, TimestampMixin
 
     
 class OrderStatus(str, enum.Enum):

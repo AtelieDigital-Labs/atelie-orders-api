@@ -6,11 +6,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DESCRIPTION: str = 'Microsserviço de gerenciamento de pedidos'
     VERSION: str = '0.1.0'
-
-    DATABASE_URL: str = "sqlite:///./orders_dev.db"
     
     # Secret key para decodificar os tokens JWT enviados pelo API Gateway/Auth
-    SECRET_KEY: str = "super-secret-key-para-desenvolvimento"
+    SECRET_KEY: str 
+    ALGORITHM: str 
+
+    DATABASE_URL: str = "sqlite:///./orders_dev.db"
+
     
     # Essa configuração diz ao Pydantic para ler o arquivo .env automaticamente
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
