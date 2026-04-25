@@ -7,6 +7,7 @@ from models.order import OrderStatus
 # ORDER ITEM
 
 class OrderItemCreate(BaseModel):
+    store_id: str
     product_variant_id: str
     quantity: int
 
@@ -21,7 +22,6 @@ class OrderItemRead(BaseModel):
 # ORDER
 
 class OrderCreate(BaseModel):
-    store_id: str
     items: list[OrderItemCreate]
 
 

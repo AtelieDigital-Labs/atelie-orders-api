@@ -6,6 +6,8 @@ from core.database import get_session
 from sqlalchemy.orm import Session
 from api.dependencies import verify_user
 
+from services.order_service import OrderService
+
 router = APIRouter(prefix='/order', tags=['order'], dependencies=[Depends(verify_user)])
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -16,12 +18,12 @@ async def orders():
     return {'message': 'Rota Acessada'}
 
 # Criação da ordem
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderRead)
 async def create(order_data: OrderCreate, session: SessionDep, user_id: str = Depends(verify_user)):
-    return {'message': 'Ordem criada'}
-    # return OrderService.create_new_order(session, order_data)
+    return OrderService.create_new_order(session, order_data, user_id)
 
 # Listar ordens
+# Criar função
 
 # Listar detalhes de uma ordem 
 @router.get('/{order_id}', status_code=HTTPStatus.OK, response_model= OrderRead)
