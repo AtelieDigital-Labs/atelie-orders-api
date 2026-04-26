@@ -1,9 +1,9 @@
+from datetime import datetime, timedelta, timezone
+
+from app.core.config import settings
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
-from datetime import datetime, timedelta, timezone
-
-from core.config import settings
 
 router = APIRouter(tags=["Mock - Temporário"])
 

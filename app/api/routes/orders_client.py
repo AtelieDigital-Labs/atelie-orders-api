@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
 from http import HTTPStatus
-from schemas.order import OrderCreate, OrderRead
 from typing import Annotated
-from core.database import get_session
-from sqlalchemy.orm import Session
-from api.dependencies import verify_user
 
-from services.order_service import OrderService
+from fastapi import APIRouter, Depends
+from app.schemas.order import OrderCreate, OrderCreatedResponse, OrderRead
+from app.services.order_service import OrderService
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.dependencies import verify_user
+from app.core.database import get_session
 
 router = APIRouter(prefix='/order', tags=['order'], dependencies=[Depends(verify_user)])
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("/")
@@ -18,10 +19,10 @@ async def orders():
     return {'message': 'Rota Acessada'}
 
 # Criação da ordem
-@router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderRead)
+@router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
 async def create(order_data: OrderCreate, session: SessionDep, user_id: str = Depends(verify_user)):
-    return OrderService.create_new_order(session, order_data, user_id)
-
+     return await OrderService.create_new_order(session, order_data, user_id)  
+ 
 # Listar ordens
 # Criar função
 

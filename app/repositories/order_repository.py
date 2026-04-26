@@ -1,9 +1,11 @@
-from sqlalchemy.orm import Session
-from models.order import Order, OrderItem
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.order import Order, OrderItem
+
 
 class OrderRepository:
     @staticmethod
-    def create_order(session: Session, user_id: str, store_id: str, price: float):
+    async def create_order(session: AsyncSession, user_id: str, store_id: str, price: float):
         new_order = Order(
             user_id=user_id,
             store_id=store_id,
@@ -11,11 +13,11 @@ class OrderRepository:
         )
         
         session.add(new_order)
-        session.flush()
+        await session.flush()
         
         return new_order
     
     @staticmethod
-    def create_order_items(session: Session, items_data: OrderItem):
+    async def create_order_items(session: AsyncSession, items_data: OrderItem):
         session.add_all(items_data)
-        session.flush()
+        await session.flush()

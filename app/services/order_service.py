@@ -1,17 +1,20 @@
-from schemas.order import OrderCreate
 from typing import Annotated
-from core.database import get_session
-from sqlalchemy.orm import Session
-from fastapi import Depends
-from models.order import OrderItem
-from repositories.order_repository import OrderRepository
 
-SessionDep = Annotated[Session, Depends(get_session)]
+from fastapi import Depends
+from app.schemas.order import OrderCreate
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_session
+from app.models.order import OrderItem
+from app.repositories.order_repository import OrderRepository
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 class OrderService: 
     @staticmethod
-    def create_new_order(session: SessionDep, order_data: OrderCreate, user_id: str):
+    async def create_new_order(session: SessionDep, order_data: OrderCreate, user_id: str):
         try:
             items_store = {}
 
@@ -26,7 +29,7 @@ class OrderService:
                 # Calcular o preço depois fazendo uma requisição pro Catalog
                 total_price = 100.00
                 
-                new_order = OrderRepository.create_order(
+                new_order = await OrderRepository.create_order(
                     session=session,
                     user_id=user_id,
                     store_id=store_id,
@@ -48,13 +51,13 @@ class OrderService:
                         )
                     )
 
-                OrderRepository.create_order_items(session, order_items_create)
+                await OrderRepository.create_order_items(session, order_items_create)
                 orders_created.append(new_order.order_id)
 
-            session.commit()
+            await session.commit()
             return {'message':'Pedido gerado', 'orders_id':orders_created}
         except Exception as e:
-            session.rollback()
+            await session.rollback()
             print(f'Erro ao gerar o pedido: {e}')
             raise e
 

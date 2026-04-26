@@ -1,13 +1,13 @@
-import datetime
 import enum
 from decimal import Decimal
 from typing import List
-from sqlalchemy import create_engine, Integer, Enum, DateTime, DECIMAL, String, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
-from core.database import Base, TimestampMixin
 
-    
+from sqlalchemy import DECIMAL, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base, TimestampMixin
+
+
 class OrderStatus(str, enum.Enum):
     PENDING = "PENDING"
     PAID = 'PAID',

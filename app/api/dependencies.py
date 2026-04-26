@@ -1,8 +1,9 @@
-from core.config import settings
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError, ExpiredSignatureError
-from fastapi import Depends, HTTPException
 from http import HTTPStatus
+
+from app.core.config import settings
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import ExpiredSignatureError, JWTError, jwt
 
 # Quando tiver a conexão com a API atualizar a rota
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token-mock")
