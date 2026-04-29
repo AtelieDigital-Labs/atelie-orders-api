@@ -1,7 +1,10 @@
-from app.core.database import Base, TimestampMixin
 from typing import List
+
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, Integer
+
+from app.core.database import Base, TimestampMixin
+
 
 class Cart(Base, TimestampMixin):
     __tablename__ = 'cart'

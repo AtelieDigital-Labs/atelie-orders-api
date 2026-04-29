@@ -1,12 +1,14 @@
-from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 from decimal import Decimal
-import datetime
-from app.models.order import OrderStatus
 
+from pydantic import BaseModel, ConfigDict
+
+from app.models.order import OrderStatus
 
 # ORDER ITEM
 
 class OrderItemCreate(BaseModel):
+    store_id: str
     product_variant_id: str
     quantity: int
 
@@ -21,8 +23,11 @@ class OrderItemRead(BaseModel):
 # ORDER
 
 class OrderCreate(BaseModel):
-    store_id: str
     items: list[OrderItemCreate]
+    
+class OrderCreatedResponse(BaseModel):
+    message: str
+    orders_id: list[int]
 
 
 class OrderRead(BaseModel):
