@@ -20,8 +20,8 @@ async def orders():
 
 # Criação da ordem
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
-async def create(order_data: OrderCreate, session: SessionDep, user_id: str = Depends(verify_user)):
-     return await OrderService.create_new_order(session, order_data, user_id)  
+async def create(session: SessionDep, user_id: str = Depends(verify_user)):
+     return await OrderService.create_new_order(session, user_id)  
  
 # Listar ordens
 # Criar função
