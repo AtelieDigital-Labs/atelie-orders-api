@@ -1,21 +1,18 @@
-from typing import Annotated
-
-from fastapi import Depends
 from app.schemas.order import OrderCreate
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import get_session
 from app.models.order import OrderItem
 from app.repositories.order_repository import OrderRepository
+from app.services.cart_service import CartService
 
-
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 class OrderService: 
     @staticmethod
-    async def create_new_order(session: SessionDep, order_data: OrderCreate, user_id: str):
+    async def create_new_order(session: AsyncSession, order_data: OrderCreate, user_id: str):
         try:
+
+            # passar os dados do carrinho para essa função, verificar o que é melhor
+
             items_store = {}
 
             for item in order_data.items:
