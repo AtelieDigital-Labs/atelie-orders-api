@@ -1,0 +1,14 @@
+services:
+  order_database:
+    image: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+
+volumes:
+  pgdata:
