@@ -3,15 +3,33 @@ from app.models.order import OrderItem
 from app.repositories.order_repository import OrderRepository
 from app.services.cart_service import CartService
 from fastapi import HTTPException
+from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
+from app.schemas.order import OrderCheckoutRequest
 
 
 class OrderService: 
     @staticmethod
-    async def create_new_order(session: AsyncSession, user_id: str):
+    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str):
         try:
 
-            #implementar busca do endereço 
+            address_data = await AccountsIntegration.get_address(order_data.address_id)
+
+            if not address_data:
+                raise HTTPException(status_code=404, detail='Não foi possível localizar o endereço de entrega')
+
+            if str(address_data['user']) != user_id:
+                raise HTTPException(status_code=403,detail='O endereço de entrega não pertece a este usuário')
+
+            address_snapshot = {
+                "street" : address_data.get('street'),
+                "number" : address_data.get('number'),
+                "complement" : address_data.get('complement', ''),
+                "neighborhood" : address_data.get('neighborhood'),
+                "city" : address_data.get('city'),
+                'state': address_data.get('state'),
+                'zip_code': address_data.get('zip_code')
+            } 
 
             cart_items = await CartService.get_cart_items(session, user_id)
 
@@ -47,21 +65,26 @@ class OrderService:
             orders_created = []
 
             for store_id, items_list in items_store.items():
-                # Calcular o preço depois fazendo uma requisição pro Catalog
-                total_price = 100.00
+                total_price = sum(
+                    catalog_data[item.product_variant_id]['unit_price'] * item.quantity 
+                    for item in items_list
+                )
                 
                 new_order = await OrderRepository.create_order(
                     session=session,
                     user_id=user_id,
                     store_id=store_id,
-                    price=total_price
+                    price=total_price,
+                    shipping_cost=0.00,
+                    shipping_address=address_snapshot,
+                    payment_method=order_data.payment_method
                 )
 
                 order_items_create = []
 
                 for item in items_list:
-                    # Pegar preço do Catalog
-                    unit_price = 50.00
+
+                    unit_price = catalog_data[item.product_variant_id]['unit_price']
 
                     order_items_create.append(
                         OrderItem(

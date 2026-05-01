@@ -21,6 +21,9 @@ class OrderItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 # ORDER
+class OrderCheckoutRequest(BaseModel):
+    address_id: str
+    payment_method: str
 
 class OrderCreate(BaseModel):
     items: list[OrderItemCreate]

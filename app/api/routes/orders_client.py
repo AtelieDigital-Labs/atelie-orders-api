@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from app.schemas.order import OrderCreate, OrderCreatedResponse, OrderRead
+from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead
 from app.services.order_service import OrderService
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +20,8 @@ async def orders():
 
 # Criação da ordem
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
-async def create(session: SessionDep, user_id: str = Depends(verify_user)):
-     return await OrderService.create_new_order(session, user_id)  
+async def create(order_data:OrderCheckoutRequest, session: SessionDep, user_id: str = Depends(verify_user)):
+     return await OrderService.create_new_order(order_data, session, user_id)  
  
 # Listar ordens
 # Criar função

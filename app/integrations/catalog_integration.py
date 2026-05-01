@@ -11,12 +11,17 @@ class CatalogIntegration:
 
         unit_price = response.json().get('unit_price')
         stock = response.json().get('stock')
+        weight = response.json().get('weight')
+        height = response.json().get('height')
+        width = response.json().get('width')
+        length = response.json().get('length')
 
-        return (product_variant_id, {'price': unit_price, 'stock': stock})
+
+        return (product_variant_id, {'price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='https://ateliedigital/catalog/product') as client:
+        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/product') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
