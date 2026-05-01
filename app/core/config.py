@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str 
     ALGORITHM: str 
 
-    DATABASE_URL: str = "sqlite+aiosqlite:///./orders_dev.db"
+    DATABASE_URL: str
 
     
     # Essa configuração diz ao Pydantic para ler o arquivo .env automaticamente

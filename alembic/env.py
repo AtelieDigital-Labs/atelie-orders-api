@@ -15,7 +15,7 @@ from app.core.database import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-db_url = settings.DATABASE_URL.replace("+aiosqlite", "")
+db_url = settings.DATABASE_URL.replace("+psycopg_async", "+psycopg").replace("+asyncpg", "+psycopg")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.

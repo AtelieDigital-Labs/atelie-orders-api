@@ -1,11 +1,13 @@
 import enum
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import DECIMAL, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base, TimestampMixin
+
 
 
 class OrderStatus(str, enum.Enum):
@@ -35,9 +37,16 @@ class Order(Base, TimestampMixin):
     order_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)    
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING)    
     price: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
+    shipping_cost: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
 
     user_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     store_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+
+    shipping_address: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    tracking_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    payment_method: Mapped[str] = mapped_column(String(50), nullable=False)
+    transaction_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     items: Mapped[List["OrderItem"]] = relationship("OrderItem", back_populates="order") 
 
