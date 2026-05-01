@@ -118,34 +118,46 @@ async def test_calculate_cart_shipping_empty_cart(mock_get_cart):
 @patch('app.integrations.catalog_integration.CatalogIntegration.get_store_zip')
 @patch('app.integrations.catalog_integration.CatalogIntegration.fetch_all_prices')
 @patch('app.services.cart_service.CartService.get_cart_items')
-async def test_calculate_cart_shipping_api_error(
+async def test_calculate_cart_shipping_fallback_pickup(
     mock_get_cart, mock_fetch_prices, mock_get_store_zip, mock_calculate_freight
 ):
     """
-    CENÁRIO 3: Falha na API de Logística.
-    Se a API do Melhor Envio retornar vazio para uma loja, o sistema deve interromper.
+    CENÁRIO 3: Restrição de CEP (Plano B).
+    A API retorna transportadoras, mas todas estão com erro de restrição de área.
+    O sistema DEVE aplicar o frete padrão (R$ 25,00, 15 dias) e mudar o nome do serviço.
     """
     # 1. Preparando Carrinho (1 item da Loja A)
     item_a = MagicMock(product_variant_id="var_1", store_id="loja_A", quantity=1)
     mock_get_cart.return_value = [item_a]
 
-    # 2. Preparando Preços
+    # 2. Preparando Preços e CEP
     mock_fetch_prices.return_value = {
         "var_1": {"unit_price": 50.0}
     }
-    
     mock_get_store_zip.return_value = "01000-000"
 
-    # 3. Forçando a API do Melhor Envio a retornar uma lista vazia (falha de área/CEP)
-    mock_calculate_freight.return_value = []
+    # 3. Forçando a API do Melhor Envio a retornar opções, mas TODAS com erro
+    mock_calculate_freight.return_value = [
+        {"name": "PAC", "price": "10.00", "error": "CEP não atendido na entrega porta a porta"},
+        {"name": "SEDEX", "price": "20.00", "error": "Área de risco temporária"}
+    ]
 
-    # 4. Verificando o Erro
-    with pytest.raises(HTTPException) as exc_info:
-        await ShippingService.calculate_cart_shipping(
-            session=AsyncMock(), 
-            user_id="user_123", 
-            destination_zip="59000-000"
-        )
+    # 4. Executando a função do Service (agora não esperamos mais que dê erro!)
+    response = await ShippingService.calculate_cart_shipping(
+        session=AsyncMock(), 
+        user_id="user_123", 
+        destination_zip="99999-999" # Simulando um CEP rural/restrito
+    )
     
-    assert exc_info.value.status_code == 503
-    assert "Erro ao cotar frete para a loja loja_A" in exc_info.value.detail
+    # 5. Asserts (Validando a inteligência da sua regra de negócio)
+    
+    # Verifica se ignorou os preços da API (10 e 20) e cravou os R$ 25.00 de segurança
+    assert response.cheapest.total_price == Decimal("25.00")
+    assert response.cheapest.max_delivery_time == 15
+    
+    # Verifica se o mapa do banco de dados vai receber os 25.00 para a loja
+    assert response.cheapest.stores_breakdown["loja_A"] == Decimal("25.00")
+    
+    # Verifica se o alerta de texto foi gerado para o front-end exibir
+    assert "Retirada obrigatória" in response.cheapest.name
+    assert "Retirada obrigatória" in response.fastest.name

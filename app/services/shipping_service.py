@@ -62,6 +62,7 @@ class ShippingService:
         results = await gather(*tasks)
         
         # 5. Processa os resultados para criar o frete "Integral"
+        # Variáveis de Totais...
         total_cheapest_price = Decimal("0.00")
         max_cheapest_time = 0
         breakdown_cheapest = {}
@@ -69,20 +70,29 @@ class ShippingService:
         total_fastest_price = Decimal("0.00")
         max_fastest_time = 0
         breakdown_fastest = {}
+        
+        # 1. Nova Flag para avisar o front-end
+        requires_pickup = False 
 
-        # Itera sobre os resultados que o gather retornou em ordem
         for store_id, options in zip(stores_ids_list, results):
             if not options:
                 raise HTTPException(status_code=503, detail=f"Erro ao cotar frete para a loja {store_id}")
 
-            # Filtra apenas opções válidas (sem a chave 'error' que a API envia se o CEP não for atendido)
             valid_options = [opt for opt in options if "error" not in opt]
-            if not valid_options:
-                continue
 
-            # Acha a opção mais barata e a mais rápida dessa loja específica
-            cheapest_store_opt = min(valid_options, key=lambda x: float(x.get("price", 0)))
-            fastest_store_opt = min(valid_options, key=lambda x: int(x.get("delivery_time", 99)))
+            # 2. O Plano B (Fallback) entra aqui!
+            if not valid_options:
+                requires_pickup = True
+                
+                # Valores padrão de segurança caso os Correios não entreguem na porta
+                default_price = 25.00
+                default_time = 15 
+                
+                cheapest_store_opt = {"price": default_price, "delivery_time": default_time}
+                fastest_store_opt = {"price": default_price, "delivery_time": default_time}
+            else:
+                cheapest_store_opt = min(valid_options, key=lambda x: float(x.get("price", 0)))
+                fastest_store_opt = min(valid_options, key=lambda x: int(x.get("delivery_time", 99)))
 
             # Soma nos totais
             price_cheap = Decimal(str(cheapest_store_opt.get("price")))
@@ -91,24 +101,30 @@ class ShippingService:
             total_cheapest_price += price_cheap
             total_fastest_price += price_fast
 
-            # Pega o maior tempo de entrega (Se a Loja A entrega em 2 dias e a B em 5, o pedido todo chega em até 5 dias)
             max_cheapest_time = max(max_cheapest_time, int(cheapest_store_opt.get("delivery_time", 0)))
             max_fastest_time = max(max_fastest_time, int(fastest_store_opt.get("delivery_time", 0)))
 
-            # Registra no mapa para o banco de dados depois
             breakdown_cheapest[store_id] = price_cheap
             breakdown_fastest[store_id] = price_fast
 
-        # 6. Retorna o Schema montadinho
+        # 3. Alterando o nome do frete para orientar a usuária no Carrinho
+        if requires_pickup:
+            nome_economico = "Econômico (Retirada obrigatória em Agência dos Correios)"
+            nome_expresso = "Expresso (Retirada obrigatória em Agência dos Correios)"
+        else:
+            nome_economico = "Econômico"
+            nome_expresso = "Expresso"
+
+        # 4. Retorna o Schema montadinho com os nomes atualizados
         return CartShippingResponse(
             cheapest=ShippingOption(
-                name="Econômico",
+                name=nome_economico,
                 total_price=total_cheapest_price,
                 max_delivery_time=max_cheapest_time,
                 stores_breakdown=breakdown_cheapest
             ),
             fastest=ShippingOption(
-                name="Expresso",
+                name=nome_expresso,
                 total_price=total_fastest_price,
                 max_delivery_time=max_fastest_time,
                 stores_breakdown=breakdown_fastest
