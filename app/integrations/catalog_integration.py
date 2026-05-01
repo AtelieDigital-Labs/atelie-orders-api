@@ -4,6 +4,40 @@ from fastapi import HTTPException
 
 class CatalogIntegration:
     @staticmethod
+    async def get_store_zip(store_id: str):
+        base_url = 'http://127.0.0.1:8000/api/catalog/store'
+        
+        async with AsyncClient(base_url=base_url) as client:
+            try:
+                response = await client.get(f'/{store_id}')
+                
+                if response.status_code == 404:
+                    raise HTTPException(
+                        status_code=404, 
+                        detail=f'Loja {store_id} não encontrada.'
+                    )
+                    
+                response.raise_for_status()
+                data = response.json()
+                
+                # Acessa o dicionário 'address' e depois pega o 'zip_code' (baseado no seu print)
+                address_data = data.get('address', {})
+                zip_code = address_data.get('zip_code')
+                
+                if not zip_code:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f'A loja {store_id} não possui um CEP de origem válido cadastrado.'
+                    )
+                    
+                return zip_code
+
+            except HTTPError as exc:
+                print(f'Erro ao conectar com o Catalog na busca da loja: {exc}')
+                raise HTTPException(status_code=503, detail='Serviço de catálogo indisponível no momento')
+
+
+    @staticmethod
     async def search_price(client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
 

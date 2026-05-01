@@ -43,6 +43,7 @@ class Order(Base, TimestampMixin):
     store_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
     shipping_address: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    shipping_method: Mapped[str] = mapped_column(String(100), nullable=False)
     tracking_code: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False)

@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Dict
 
 from app.models.order import OrderStatus
 
@@ -24,6 +25,12 @@ class OrderItemRead(BaseModel):
 class OrderCheckoutRequest(BaseModel):
     address_id: str
     payment_method: str
+
+    shipping_method: str = Field(..., description="Nome da opção de frete escolhida (ex: Econômico, Expresso).")
+    shipping_costs_per_store: Dict[str, Decimal] = Field(
+        ..., 
+        description="Mapa contendo o ID da loja e o valor do frete específico para ela (ex: {'loja1': 15.50, 'loja2': 20.00})."
+    )
 
 class OrderCreate(BaseModel):
     items: list[OrderItemCreate]

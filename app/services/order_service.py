@@ -69,13 +69,16 @@ class OrderService:
                     catalog_data[item.product_variant_id]['unit_price'] * item.quantity 
                     for item in items_list
                 )
+
+                store_shipping_cost = order_data.shipping_costs_per_store.get(store_id, 0.00)
                 
                 new_order = await OrderRepository.create_order(
                     session=session,
                     user_id=user_id,
                     store_id=store_id,
                     price=total_price,
-                    shipping_cost=0.00,
+                    shipping_method=order_data.shipping_method, 
+                    shipping_cost=store_shipping_cost,
                     shipping_address=address_snapshot,
                     payment_method=order_data.payment_method
                 )
