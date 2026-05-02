@@ -109,7 +109,15 @@ class OrderService:
 
             await session.commit()
 
-            # Implementar conexão com o catalog para decrescer o estoque dos produtos comprados
+            stock_payload = [
+                {
+                    'product_variant_id': item.product_variant_id,
+                    'quantity': item.quantity
+                }
+                for item in cart_items
+            ]
+
+            await CatalogIntegration.deacrese_stock(stock_payload)
 
             return {'message':'Pedido gerado', 'orders_id':orders_created}
         except Exception as e:

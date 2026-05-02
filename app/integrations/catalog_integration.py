@@ -67,5 +67,18 @@ class CatalogIntegration:
             except HTTPError as exc:
                 print(f'Erro ao conectar com o Catalog: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível')
-            
+    
+    # Método para ir posterior por RabbitMQ
+    @staticmethod
+    async def deacrese_stock(paylod: list[dict]):
+        url = 'http://localhost:8000/api/catalog/stock/decrease'
+
+        async with AsyncClient() as client:
+            try:
+                response = await client.post(url, json=paylod)
+                response.raise_for_status()
+                return True
+            except HTTPError as exc:
+                print(f'Erro ao tentar baixar estoque no Catalog: {exc}')
+                return False
             
