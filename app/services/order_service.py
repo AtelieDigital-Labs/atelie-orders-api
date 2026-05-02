@@ -6,6 +6,8 @@ from fastapi import HTTPException
 from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.schemas.order import OrderCheckoutRequest
+from app.validators.validate import validate_address_user
+
 
 
 class OrderService: 
@@ -15,11 +17,7 @@ class OrderService:
 
             address_data = await AccountsIntegration.get_address(order_data.address_id)
 
-            if not address_data:
-                raise HTTPException(status_code=404, detail='Não foi possível localizar o endereço de entrega')
-
-            if str(address_data['user']) != user_id:
-                raise HTTPException(status_code=403,detail='O endereço de entrega não pertece a este usuário')
+            validate_address_user(address_data, user_id)
 
             address_snapshot = {
                 "street" : address_data.get('street'),

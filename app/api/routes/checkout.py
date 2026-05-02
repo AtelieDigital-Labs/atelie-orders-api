@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from typing import Annotated
 from app.core.database import get_session
 from app.api.dependencies import verify_user
+from app.validators.validate import validate_address_user
 
 
 router = APIRouter(prefix='/checkout', tags=['checkout'])
@@ -26,8 +27,8 @@ async def get_shipping_options(
 ):
 
     address_data = await AccountsIntegration.get_address(address_id)
-    if not address_data or str(address_data.get('user_id')) != str(user_id):
-        raise HTTPException(status_code=403, detail="Endereço inválido.")
+    
+    validate_address_user(address_data, user_id)
     
     destination_zip = address_data.get('zip_code')
 
