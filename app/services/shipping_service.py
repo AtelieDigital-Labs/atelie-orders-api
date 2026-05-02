@@ -1,6 +1,8 @@
 from asyncio import gather
 from decimal import Decimal
 from fastapi import HTTPException
+from http import HTTPStatus
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.integrations.shipping_integration import ShippingIntegration
@@ -14,7 +16,7 @@ class ShippingService:
         # 1. Pega os itens do carrinho
         cart_items = await CartService.get_cart_items(session, user_id)
         if not cart_items:
-            raise HTTPException(status_code=400, detail="Carrinho vazio.")
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Carrinho vazio.")
 
         # 2. Busca dimensões no Catalog
         products_ids = [item.product_variant_id for item in cart_items]
@@ -35,15 +37,15 @@ class ShippingService:
             # Adiciona o item com dimensões da Variante
             stores_payloads[item.store_id].append({
                 "id": variant_id,
-                "width": catalog_info.get('width_cm', 10),
-                "height": catalog_info.get('height_cm', 10),
-                "length": catalog_info.get('length_cm', 10),
-                "weight": catalog_info.get('weight_kg', 0.5),
+                "width": catalog_info.get('width', 10),
+                "height": catalog_info.get('height', 10),
+                "length": catalog_info.get('length', 10),
+                "weight": catalog_info.get('weight', 0.5),
                 "insurance_value": catalog_info.get('unit_price', 0),
                 "quantity": item.quantity
             })
 
-        # 4. Dispara as requisições simultâneas para o Melhor Envio (Usando gather!)
+        # 4. Dispara as requisições simultâneas para o Melhor Envio 
         tasks = []
         stores_ids_list = list(stores_payloads.keys())
         
@@ -76,7 +78,7 @@ class ShippingService:
 
         for store_id, options in zip(stores_ids_list, results):
             if not options:
-                raise HTTPException(status_code=503, detail=f"Erro ao cotar frete para a loja {store_id}")
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail=f"Erro ao cotar frete para a loja {store_id}")
 
             valid_options = [opt for opt in options if "error" not in opt]
 
@@ -109,22 +111,22 @@ class ShippingService:
 
         # 3. Alterando o nome do frete para orientar a usuária no Carrinho
         if requires_pickup:
-            nome_economico = "Econômico (Retirada obrigatória em Agência dos Correios)"
-            nome_expresso = "Expresso (Retirada obrigatória em Agência dos Correios)"
+            name_economy = "Econômico (Retirada obrigatória em Agência dos Correios)"
+            name_express = "Expresso (Retirada obrigatória em Agência dos Correios)"
         else:
-            nome_economico = "Econômico"
-            nome_expresso = "Expresso"
+            name_economy = "Econômico"
+            name_express = "Expresso"
 
         # 4. Retorna o Schema montadinho com os nomes atualizados
         return CartShippingResponse(
             cheapest=ShippingOption(
-                name=nome_economico,
+                name=name_economy,
                 total_price=total_cheapest_price,
                 max_delivery_time=max_cheapest_time,
                 stores_breakdown=breakdown_cheapest
             ),
             fastest=ShippingOption(
-                name=nome_expresso,
+                name=name_express,
                 total_price=total_fastest_price,
                 max_delivery_time=max_fastest_time,
                 stores_breakdown=breakdown_fastest

@@ -7,6 +7,8 @@ from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.schemas.order import OrderCheckoutRequest
 from app.validators.validate import validate_address_user
+from http import HTTPStatus
+
 
 
 
@@ -32,7 +34,7 @@ class OrderService:
             cart_items = await CartService.get_cart_items(session, user_id)
 
             if not cart_items:
-                raise HTTPException(status_code=400, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
+                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
             
             products_ids = [item.product_variant_id for item in cart_items]
 
@@ -45,14 +47,14 @@ class OrderService:
 
                 if not catalog_info:
                     raise HTTPException(
-                        status_code=400,
+                        status_code=HTTPStatus.BAD_REQUEST,
                         detail=f'O produto {variant_id} não está mais disponível para venda'
                     )
                 
                 stock_available = catalog_info.get('stock', 0)
                 if item.quantity > stock_available:
                     raise HTTPException(
-                        status_code=400,
+                        status_code=HTTPStatus.BAD_REQUEST,
                         detail=f'Estoque insuficiente para o produto {variant_id}'
                     )
 
@@ -70,15 +72,19 @@ class OrderService:
 
                 store_shipping_cost = order_data.shipping_costs_per_store.get(store_id, 0.00)
                 
+                order_payload = {
+                    "user_id": user_id,
+                    "store_id": store_id,
+                    "price": total_price,
+                    "shipping_method": order_data.shipping_method,
+                    "shipping_cost": store_shipping_cost,
+                    "shipping_address": address_snapshot,
+                    "payment_method": order_data.payment_method
+                }
+                
                 new_order = await OrderRepository.create_order(
                     session=session,
-                    user_id=user_id,
-                    store_id=store_id,
-                    price=total_price,
-                    shipping_method=order_data.shipping_method, 
-                    shipping_cost=store_shipping_cost,
-                    shipping_address=address_snapshot,
-                    payment_method=order_data.payment_method
+                    order_data=order_payload
                 )
 
                 order_items_create = []

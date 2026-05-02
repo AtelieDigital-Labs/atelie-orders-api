@@ -4,11 +4,15 @@ from app.models.order import Order, OrderItem
 
 class OrderRepository:
     @staticmethod
-    async def create_order(session: AsyncSession, user_id: str, store_id: str, price: float):
+    async def create_order(session: AsyncSession, order_data: dict):
         new_order = Order(
-            user_id=user_id,
-            store_id=store_id,
-            price=price
+            user_id=order_data.user_id,
+            store_id=order_data.store_id,
+            price=order_data.price,
+            shipping_cost=order_data.shipping_cost,
+            shipping_address=order_data.shipping_address,
+            shipping_method=order_data.shipping_method,
+            payment_method=order_data.payment_method
         )
         
         session.add(new_order)

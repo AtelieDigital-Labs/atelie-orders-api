@@ -1,6 +1,7 @@
 from httpx import AsyncClient, HTTPError
 from asyncio import gather
 from fastapi import HTTPException
+from http import HTTPStatus
 
 class CatalogIntegration:
     @staticmethod
@@ -13,20 +14,20 @@ class CatalogIntegration:
                 
                 if response.status_code == 404:
                     raise HTTPException(
-                        status_code=404, 
+                        status_code=HTTPStatus.NOT_FOUND, 
                         detail=f'Loja {store_id} não encontrada.'
                     )
                     
                 response.raise_for_status()
                 data = response.json()
                 
-                # Acessa o dicionário 'address' e depois pega o 'zip_code' (baseado no seu print)
+                # Acessa o dicionário 'address' e depois pega o 'zip_code' 
                 address_data = data.get('address', {})
                 zip_code = address_data.get('zip_code')
                 
                 if not zip_code:
                     raise HTTPException(
-                        status_code=400, 
+                        status_code=HTTPStatus.BAD_REQUEST, 
                         detail=f'A loja {store_id} não possui um CEP de origem válido cadastrado.'
                     )
                     
@@ -34,7 +35,7 @@ class CatalogIntegration:
 
             except HTTPError as exc:
                 print(f'Erro ao conectar com o Catalog na busca da loja: {exc}')
-                raise HTTPException(status_code=503, detail='Serviço de catálogo indisponível no momento')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
 
 
     @staticmethod
@@ -65,6 +66,6 @@ class CatalogIntegration:
 
             except HTTPError as exc:
                 print(f'Erro ao conectar com o Catalog: {exc}')
-                raise HTTPException(status_code=503, detail='Serviço de catálogo indisponível')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível')
             
             

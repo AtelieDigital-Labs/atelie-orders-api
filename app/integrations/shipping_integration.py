@@ -10,7 +10,7 @@ class ShippingIntegration:
         headers = {
             "Authorization": f"Bearer {os.getenv('MELHOR_ENVIO_TOKEN')}",
             "Content-Type": "application/json",
-            "User-Agent": "AtelieDigital/1.0 (g.renata@escolar.ifrn.edu.br)" # Eles exigem um User-Agent
+            "User-Agent": "AtelieDigital/1.0 (g.renata@escolar.ifrn.edu.br)" 
         }
         
         payload = {

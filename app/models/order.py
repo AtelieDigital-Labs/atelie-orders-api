@@ -30,7 +30,7 @@ class OrderStatus(str, enum.Enum):
             "CANCELLED": "Cancelado"
         }
         return labels[self.value]
-    
+     
 class Order(Base, TimestampMixin):
     __tablename__ = 'orders'
     

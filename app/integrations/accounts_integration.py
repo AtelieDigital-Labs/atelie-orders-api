@@ -1,6 +1,7 @@
 from httpx import AsyncClient, HTTPError
 from asyncio import gather
 from fastapi import HTTPException
+from http import HTTPStatus
 
 class AccountsIntegration:
     @staticmethod
@@ -18,4 +19,4 @@ class AccountsIntegration:
 
             except HTTPError as exc:
                 print(f'Erro ao conectar com o Accounts: {exc}')
-                raise HTTPException(status_code=503, detail='Serviço de autenticação indisponível')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de autenticação indisponível')
