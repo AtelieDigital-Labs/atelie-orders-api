@@ -1,10 +1,12 @@
 import enum
+import uuid
 from decimal import Decimal
 from typing import List, Optional
-
 from sqlalchemy import DECIMAL, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID
+
 
 from app.core.database import Base, TimestampMixin
 
@@ -13,6 +15,7 @@ from app.core.database import Base, TimestampMixin
 class OrderStatus(str, enum.Enum):
     PENDING = "PENDING"
     PAID = 'PAID'
+    REFUSED = 'REFUSED'
     PROCESSING = "PROCESSING"
     SHIPPED = 'SHIPPED'
     DELIVERED = "DELIVERED"
@@ -23,9 +26,10 @@ class OrderStatus(str, enum.Enum):
     def label(self) -> str:
         labels = {
             "PENDING": "Pendente",
-            "PAID": "Pago", # verificar se a api precisa desse status
+            "PAID": "Pago", 
+            "REFUSED": 'Recusado',
             "PROCESSING": "Em processamento",
-            "SHIPPED": "Enviado", # Depende se terá a parte de frete
+            "SHIPPED": "Enviado", 
             "DELIVERED": "Entregue",
             "CANCELLED": "Cancelado"
         }
@@ -37,6 +41,7 @@ class Order(Base, TimestampMixin):
     order_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)    
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING)    
     price: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
+    platform_fee: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
     shipping_cost: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
 
     user_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
@@ -48,7 +53,8 @@ class Order(Base, TimestampMixin):
 
     payment_method: Mapped[str] = mapped_column(String(50), nullable=False)
     transaction_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-
+    checkout_group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    
     items: Mapped[List["OrderItem"]] = relationship("OrderItem", back_populates="order") 
 
 class OrderItem(Base, TimestampMixin):
