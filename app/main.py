@@ -5,6 +5,7 @@ from app.core.config import settings
 from fastapi import FastAPI
 import asyncio
 import sys
+from fastapi_pagination import add_pagination
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -21,3 +22,5 @@ app.include_router(order_router)
 app.include_router(checkout_router)
 
 
+
+add_pagination(app)

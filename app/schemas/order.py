@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Dict
+from typing import Dict, List
 
 from app.models.order import OrderStatus
 
@@ -53,6 +53,9 @@ class OrderRead(BaseModel):
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
 
+class OrderResponse(BaseModel):
+    order_id: int
+    status: OrderStatus
+    created_at: datetime
 
-
-
+    model_config = ConfigDict(from_attributes=True)
