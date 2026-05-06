@@ -84,7 +84,6 @@ class OrderService:
 
             group_id = uuid.uuid4()
             total_cart_amount = Decimal("0.00")
-            # disbursements = []
             fee_percentage = Decimal("0.05")
 
             address_data = await AccountsIntegration.get_address(order_data.address_id)
@@ -148,17 +147,6 @@ class OrderService:
                 # Valor do artesão 
                 artisan_amount = (products_price - store_fee) + store_shipping_cost
 
-                # Pega a chave do artesão 
-                # artisan_id = CatalogIntegration.get_store_owner(store_id)
-                # artisan_pix_key = AccountsIntegration.get_financials(artisan_id)
-
-                # disbursements.append(
-                #     {
-                #         "collector_id": artisan_pix_key,
-                #         "amount": artisan_amount,
-                #         "apllication_fee": store_fee
-                #     }
-                # )
 
                 total_cart_amount += (products_price + store_shipping_cost)
                 
@@ -222,16 +210,6 @@ class OrderService:
             await CartService.clear_cart(session, user_id)
 
             await session.commit()
-
-            # stock_payload = [
-            #     {
-            #         'product_variant_id': item.product_variant_id,
-            #         'quantity': item.quantity
-            #     }
-            #     for item in cart_items
-            # ]
-
-            # await CatalogIntegration.deacrese_stock(stock_payload)
 
 
             return {

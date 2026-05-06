@@ -5,7 +5,6 @@ from http import HTTPStatus
  
 class CatalogIntegration:
     @staticmethod
-<<<<<<< HEAD
     async def get_data_for_product(client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
 
@@ -58,7 +57,6 @@ class CatalogIntegration:
                 print(f'Erro ao conectar com o Catalog na busca da loja: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
             
-=======
     async def get_store_owner(store_id: str):
         base_url = 'http://127.0.0.1:8000/api/catalog/stores'
 
@@ -81,7 +79,6 @@ class CatalogIntegration:
                 print(f'Erro ao conectar com o Catalog na busca do dono da loja: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
 
->>>>>>> c9366b1 (feat: include methods integration for keys artisan)
 
     @staticmethod
     async def get_store_zip(store_id: str):

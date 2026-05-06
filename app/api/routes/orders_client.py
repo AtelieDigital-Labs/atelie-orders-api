@@ -10,7 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import verify_user
 from app.core.database import get_session
 
+<<<<<<< HEAD
 router = APIRouter(prefix='/orders', tags=['orders'], dependencies=[Depends(verify_user)])
+=======
+router = APIRouter(prefix='/api/orders', tags=['order'], dependencies=[Depends(verify_user)])
+>>>>>>> 6dc8465 (feat: include webhook payment)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

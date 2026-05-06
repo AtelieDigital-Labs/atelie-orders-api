@@ -14,7 +14,7 @@ from app.api.dependencies import verify_user
 from app.validators.validate import validate_address_user
 
 
-router = APIRouter(prefix='/checkout', tags=['checkout'])
+router = APIRouter(prefix='/api/checkout', tags=['checkout'])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

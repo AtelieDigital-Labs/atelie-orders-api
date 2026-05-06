@@ -51,5 +51,21 @@ class PaymentIntegration:
                 
                 return {}
 
+    @staticmethod
+    async def verify_payment(payment_id: str):
+        url = f"https://api.mercadopago.com/v1/orders/{payment_id}"
 
+        headers = {
+            "Authorization": f"Bearer {os.getenv('MERCADO_PAGO_TOKEN')}",
+            "Content-Type": "application/json" 
+        }
 
+        async with AsyncClient() as client:
+            try:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                return response.json()
+            
+            except HTTPError as exc:
+                print(f"Erro ao verificar pagamento {payment_id} no Mercado Pago: {exc}")
+                return {}
