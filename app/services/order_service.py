@@ -14,6 +14,20 @@ from http import HTTPStatus
 
 class OrderService: 
     @staticmethod
+    async def get_order_by_id(session: AsyncSession, order_id: int, user_id: str):
+        order = await OrderRepository.get_order(session, order_id, user_id)
+
+        if not order:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Pedido não encontrado ou não pertence a este usuário")
+
+        return order
+    
+    @staticmethod
+    async def get_all_orders(session: AsyncSession, user_id: str):
+        return await OrderRepository.get_all_orders(session, user_id)
+
+
+    @staticmethod
     async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str):
         try:
 
@@ -124,9 +138,3 @@ class OrderService:
             await session.rollback()
             print(f'Erro ao gerar o pedido: {e}')
             raise e
-
-            
-            
-
-
-
