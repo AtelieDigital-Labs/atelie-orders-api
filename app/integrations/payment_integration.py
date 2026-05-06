@@ -1,0 +1,55 @@
+from httpx import AsyncClient, HTTPError
+import os
+import uuid
+
+class PaymentIntegration:
+    @staticmethod
+    async def generate_payment(payload: dict):
+        url = 'https://api.mercadopago.com/v1/orders'
+
+        headers = {
+            "Authorization": f"Bearer {os.getenv('MERCADO_PAGO_TOKEN')}",
+            "X-Idempotency-Key": str(uuid.uuid4()), 
+            "Content-Type": "application/json" 
+        }
+
+        payment_data = {
+            "total_amount": payload.total_amount,
+            "type": "online",
+            "external_reference": payload.checkout_group_id,
+            "processing_mode": "automatic",
+            "description": "Compra no Ateliê Digital",
+            "transactions": {
+                "payments": [
+                    {
+                        "amount": payload.total_amount,
+                        "payment_method": {
+                            "id": "pix",
+                            "type": "bank_transfer"
+                        },
+                        "expiration_time": "P3Y6M4DT12H30M5S"
+                    }
+                ]
+            },
+            "payer": {
+                "first_name": payload.buyer_first_name,
+                "last_name": payload.buyer_last_name,
+                "email": payload.buyer_email
+            }
+        }
+
+
+        async with AsyncClient() as client:
+            try:
+                response = await client.post(url, json=payment_data, headers=headers)
+                response.raise_for_status()
+                
+                return response.json()
+            except HTTPError as exc:
+                if hasattr(exc, 'response') and exc.response is not None:
+                    print(f"Detalhe do erro: {exc.response.json()}")
+                
+                return {}
+
+
+

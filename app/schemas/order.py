@@ -42,7 +42,8 @@ class OrderCheckoutRequest(BaseModel):
 
 class OrderCreatedResponse(BaseModel):
     message: str
-    orders_id: list[int]
+    checkout_group_id: str
+    payment_info: dict
 
 
 class OrderRead(BaseModel):

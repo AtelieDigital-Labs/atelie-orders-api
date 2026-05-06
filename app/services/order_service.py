@@ -8,7 +8,9 @@ from app.integrations.catalog_integration import CatalogIntegration
 from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
-
+import uuid
+from decimal import Decimal
+from app.integrations.payment_integration import PaymentIntegration
 
 VALID_TRANSITIONS = {
     OrderStatus.PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
@@ -80,6 +82,11 @@ class OrderService:
     async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str):
         try:
 
+            group_id = uuid.uuid4()
+            total_cart_amount = Decimal("0.00")
+            # disbursements = []
+            fee_percentage = Decimal("0.05")
+
             address_data = await AccountsIntegration.get_address(order_data.address_id)
 
             validate_address_user(address_data, user_id)
@@ -128,21 +135,44 @@ class OrderService:
             orders_created = []
 
             for store_id, items_list in items_store.items():
-                total_price = sum(
+                products_price = Decimal(sum(
                     catalog_data[item.product_variant_id]['unit_price'] * item.quantity 
                     for item in items_list
-                )
+                ))
 
                 store_shipping_cost = order_data.shipping_costs_per_store.get(store_id, 0.00)
+
+                # Taxa do Ateliê Digital por pedido
+                store_fee = products_price * fee_percentage
+
+                # Valor do artesão 
+                artisan_amount = (products_price - store_fee) + store_shipping_cost
+
+                # Pega a chave do artesão 
+                # artisan_id = CatalogIntegration.get_store_owner(store_id)
+                # artisan_pix_key = AccountsIntegration.get_financials(artisan_id)
+
+                # disbursements.append(
+                #     {
+                #         "collector_id": artisan_pix_key,
+                #         "amount": artisan_amount,
+                #         "apllication_fee": store_fee
+                #     }
+                # )
+
+                total_cart_amount += (products_price + store_shipping_cost)
                 
                 order_payload = {
                     "user_id": user_id,
                     "store_id": store_id,
-                    "price": total_price,
+                    "price": products_price,
+                    "checkout_group_id": group_id,
                     "shipping_method": order_data.shipping_method,
                     "shipping_cost": store_shipping_cost,
                     "shipping_address": address_snapshot,
-                    "payment_method": order_data.payment_method
+                    "payment_method": order_data.payment_method,
+                    "platform_fee": store_fee,
+                    "artisan_amount": artisan_amount
                 }
                 
                 new_order = await OrderRepository.create_order(
@@ -168,21 +198,51 @@ class OrderService:
                 await OrderRepository.create_order_items(session, order_items_create)
                 orders_created.append(new_order.order_id)
 
+            client_data = await AccountsIntegration.get_data_user(user_id)
+            
+            payment_payload = {
+                "total_amount": float(total_cart_amount),
+                "payment_method": order_data.payment_method.lower(),
+                "checkout_group_id": str(group_id),
+                "buyer_email": client_data.email,
+                "buyer_first_name": client_data.first_name,
+                "buyer_last_name": client_data.last_name,
+            }
+
+            mp_response = await PaymentIntegration.generate_payment(payload=payment_payload)
+
+
+            if not mp_response:
+                await session.rollback()
+                raise Exception("Falha ao gerar pagamento")
+            
+            pix = mp_response['point_of_interaction']['transaction_data']['qr_code_base64']
+            pix_copia_cola = mp_response['point_of_interaction']['transaction_data']['qr_code']
+
             await CartService.clear_cart(session, user_id)
 
             await session.commit()
 
-            stock_payload = [
-                {
-                    'product_variant_id': item.product_variant_id,
-                    'quantity': item.quantity
+            # stock_payload = [
+            #     {
+            #         'product_variant_id': item.product_variant_id,
+            #         'quantity': item.quantity
+            #     }
+            #     for item in cart_items
+            # ]
+
+            # await CatalogIntegration.deacrese_stock(stock_payload)
+
+
+            return {
+                'message':'Pedido gerado', 
+                'checkout_group_id':str(group_id),
+                'payment_info': {
+                    'qr_code_base64': pix,
+                    'qr_code': pix_copia_cola
                 }
-                for item in cart_items
-            ]
-
-            await CatalogIntegration.deacrese_stock(stock_payload)
-
-            return {'message':'Pedido gerado', 'orders_id':orders_created}
+            }
+        
         except Exception as e:
             await session.rollback()
             print(f'Erro ao gerar o pedido: {e}')

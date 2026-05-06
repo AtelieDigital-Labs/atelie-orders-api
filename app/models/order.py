@@ -42,6 +42,7 @@ class Order(Base, TimestampMixin):
     status: Mapped[OrderStatus] = mapped_column(Enum(OrderStatus), default=OrderStatus.PENDING)    
     price: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
     platform_fee: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
+    artisan_ammount: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
     shipping_cost: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), default=Decimal("0.00"))
 
     user_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

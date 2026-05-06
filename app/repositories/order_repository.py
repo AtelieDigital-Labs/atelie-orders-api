@@ -48,10 +48,13 @@ class OrderRepository:
             user_id=order_data.user_id,
             store_id=order_data.store_id,
             price=order_data.price,
+            platform_fee=order_data.platform_fee,
+            checkout_group_id=order_data.checkout_group_id,
             shipping_cost=order_data.shipping_cost,
             shipping_address=order_data.shipping_address,
             shipping_method=order_data.shipping_method,
-            payment_method=order_data.payment_method
+            payment_method=order_data.payment_method,
+            artisan_amount=order_data.artisan_amount
         )
         
         session.add(new_order)
