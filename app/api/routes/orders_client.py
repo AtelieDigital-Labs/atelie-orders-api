@@ -26,7 +26,7 @@ async def list(session: SessionDep, order_id: int,  user_id: str = Depends(verif
    """
     Lista os detalhes de um pedido
    """
-   return OrderService.get_order_by_id(session, order_id, user_id)
+   return await OrderService.get_order_by_id(session, order_id, user_id)
 
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
@@ -34,4 +34,4 @@ async def list_orders(session: SessionDep, user_id: str = Depends(verify_user)):
     """
     Lista todos os pedidos do cliente
     """
-    return OrderService.get_all_orders(session, user_id)
+    return await OrderService.get_all_orders(session, user_id)
