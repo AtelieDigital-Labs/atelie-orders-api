@@ -1,7 +1,7 @@
 import os
 from httpx import AsyncClient, HTTPError
 from fastapi import HTTPException
-
+ 
 class ShippingIntegration:
     @staticmethod
     async def calculate_store_freight(origin_zip: str, dest_zip: str, products_payload: list) -> list:

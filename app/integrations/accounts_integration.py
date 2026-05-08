@@ -6,18 +6,26 @@ from http import HTTPStatus
 class AccountsIntegration:
     @staticmethod
     # passar o token no headers 
-    async def get_data_user(user_id: str):
-        # Verificar a rota, porque essa /me é quando ele está logado, e preciso ver o que passar visto que não achei rota pra pegar os dados de um usuário
-        async with AsyncClient(base_url="https://localhost:800/api/accounts/me") as client:
+    async def get_data_user(token: str):
+
+        base_url = "http://127.0.0.1:8001/api/accounts/me/" 
+        
+        headers = {
+            "Authorization": f"Bearer {token}"  
+        }
+
+        async with AsyncClient() as client:
             try:
-                response = await client.get(f'/{user_id}/')
+                response = await client.get(url=base_url, headers=headers)
 
                 response.raise_for_status()
 
+                response_data = response.json()
+
                 data = {
-                    "email": response.json().get('email'),
-                    "first_name": response.json().get('first_name'),
-                    "last_name": response.json().get('last_name')
+                    "email": response_data.get('email'),
+                    "first_name": response_data.get('first_name'),
+                    "last_name": response_data.get('last_name')
                 }
 
                 return data
@@ -27,11 +35,14 @@ class AccountsIntegration:
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de autenticação indisponível')
 
     @staticmethod
-    async def get_financials(user_id: str):
-        # ajustar base_url conforme o accounts
-        async with AsyncClient(base_url="https://localhost:800/api/accounts/") as client:
+    async def get_financials(user_id: str, token: str):
+        headers = {
+            "Authorization": f"Bearer {token}"  
+        }
+
+        async with AsyncClient(base_url="http://localhost:8001/api/accounts/") as client:
             try:
-                response = await client.get(f'/{user_id}/financials')
+                response = await client.get(f'/{user_id}/financials', headers=headers)
 
                 if response.status_code == 404:
                     raise HTTPException(
@@ -50,10 +61,15 @@ class AccountsIntegration:
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de autenticação indisponível')
             
     @staticmethod
-    async def get_address(address_id: str):
-        async with AsyncClient(base_url="https://localhost:800/api/accounts/address") as client:
+    async def get_address(address_id: str, token: str):
+        
+        headers = {
+            "Authorization": f"Bearer {token}"  
+        }
+
+        async with AsyncClient(base_url = "http://127.0.0.1:8001/api/accounts/addresses/") as client:
             try:
-                response = await client.get(f'/{address_id}')
+                response = await client.get(f'/{address_id}/', headers=headers)
 
                 if response.status_code == 404:
                     return None

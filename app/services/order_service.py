@@ -23,6 +23,7 @@ VALID_TRANSITIONS = {
 
 class OrderService: 
     @staticmethod
+<<<<<<< HEAD
     async def update_status_order(session: AsyncSession, order_id: int, user_id: str, update_status: OrderArtisanStatusUpdate):
         store_id = await CatalogIntegration.get_store_id(user_id)
 
@@ -80,13 +81,16 @@ class OrderService:
 
     @staticmethod
     async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str):
+=======
+    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str, token: str):
+>>>>>>> e0d3970 (refactor: update accounts integration)
         try:
 
             group_id = uuid.uuid4()
             total_cart_amount = Decimal("0.00")
             fee_percentage = Decimal("0.05")
 
-            address_data = await AccountsIntegration.get_address(order_data.address_id)
+            address_data = await AccountsIntegration.get_address(order_data.address_id, token)
 
             validate_address_user(address_data, user_id)
 
@@ -186,15 +190,15 @@ class OrderService:
                 await OrderRepository.create_order_items(session, order_items_create)
                 orders_created.append(new_order.order_id)
 
-            client_data = await AccountsIntegration.get_data_user(user_id)
+            client_data = await AccountsIntegration.get_data_user(token=token)
             
             payment_payload = {
                 "total_amount": float(total_cart_amount),
                 "payment_method": order_data.payment_method.lower(),
                 "checkout_group_id": str(group_id),
-                "buyer_email": client_data.email,
-                "buyer_first_name": client_data.first_name,
-                "buyer_last_name": client_data.last_name,
+                "buyer_email": client_data['email'],
+                "buyer_first_name": client_data['first_name'],
+                "buyer_last_name": client_data['last_name'],
             }
 
             mp_response = await PaymentIntegration.generate_payment(payload=payment_payload)
