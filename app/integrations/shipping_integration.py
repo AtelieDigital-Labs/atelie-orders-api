@@ -1,6 +1,6 @@
-import os
 from httpx import AsyncClient, HTTPError
 from fastapi import HTTPException
+from app.core.config import settings
  
 class ShippingIntegration:
     @staticmethod
@@ -8,7 +8,7 @@ class ShippingIntegration:
         url = "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate"
         
         headers = {
-            "Authorization": f"Bearer {os.getenv('MELHOR_ENVIO_TOKEN')}",
+            "Authorization": f"Bearer {settings.MELHOR_ENVIO_TOKEN}",
             "Content-Type": "application/json",
             "User-Agent": "AtelieDigital/1.0 (g.renata@escolar.ifrn.edu.br)" 
         }

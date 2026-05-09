@@ -55,7 +55,6 @@ class WebhookService:
                 order.transaction_id = str(payment_id) # Salva o ID do Mercado Pago para rastreio
 
                 # Prepara os itens para baixar o estoque do Catalog
-                # (Assumindo que você carregou os items via eager loading ou faz uma query aqui)
                 for item in order.items:
                     stock_payload.append({
                         "product_variant_id": item.product_variant_id,

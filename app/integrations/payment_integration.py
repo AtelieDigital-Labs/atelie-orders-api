@@ -1,6 +1,7 @@
 from httpx import AsyncClient, HTTPError
-import os
 import uuid
+from app.core.config import settings
+
 
 class PaymentIntegration:
     @staticmethod
@@ -8,33 +9,33 @@ class PaymentIntegration:
         url = 'https://api.mercadopago.com/v1/orders'
 
         headers = {
-            "Authorization": f"Bearer {os.getenv('MERCADO_PAGO_TOKEN')}",
+            "Authorization": f"Bearer {settings.MERCADO_PAGO_TOKEN}",
             "X-Idempotency-Key": str(uuid.uuid4()), 
             "Content-Type": "application/json" 
         }
 
         payment_data = {
-            "total_amount": payload.total_amount,
+            "total_amount": payload.get("total_amount"),
             "type": "online",
-            "external_reference": payload.checkout_group_id,
+            "external_reference": str(payload.get("checkout_group_id")),
             "processing_mode": "automatic",
             "description": "Compra no Ateliê Digital",
             "transactions": {
                 "payments": [
                     {
-                        "amount": payload.total_amount,
+                        "amount": payload.get("total_amount"),
                         "payment_method": {
                             "id": "pix",
                             "type": "bank_transfer"
                         },
-                        "expiration_time": "P3Y6M4DT12H30M5S"
+                        "expiration_time": "P3Y6M4DT12H30M5S" # Nota sobre isso abaixo
                     }
                 ]
             },
             "payer": {
-                "first_name": payload.buyer_first_name,
-                "last_name": payload.buyer_last_name,
-                "email": payload.buyer_email
+                "first_name": payload.get("buyer_first_name"),
+                "last_name": payload.get("buyer_last_name"),
+                "email": payload.get("buyer_email")
             }
         }
 
@@ -56,7 +57,7 @@ class PaymentIntegration:
         url = f"https://api.mercadopago.com/v1/orders/{payment_id}"
 
         headers = {
-            "Authorization": f"Bearer {os.getenv('MERCADO_PAGO_TOKEN')}",
+            "Authorization": f"Bearer {settings.MERCADO_PAGO_TOKEN}",
             "Content-Type": "application/json" 
         }
 
