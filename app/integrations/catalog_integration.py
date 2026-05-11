@@ -5,6 +5,28 @@ from http import HTTPStatus
 
 class CatalogIntegration:
     @staticmethod
+    async def get_store_id(user_id: str):
+        base_url = 'http://127.0.0.1:8000/api/catalog/store'
+
+        async with AsyncClient(base_url=base_url) as client:
+            try:
+                response = await client.get(f'/{user_id}')
+
+                if response.status_code == 404:
+                    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Loja não encontrada')
+                
+                response.raise_for_status()
+
+                store_id = response.json().get('id')
+
+                return store_id
+            
+            except HTTPError as exc:
+                print(f'Erro ao conectar com o Catalog na busca da loja: {exc}')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
+            
+
+    @staticmethod
     async def get_store_zip(store_id: str):
         base_url = 'http://127.0.0.1:8000/api/catalog/store'
         

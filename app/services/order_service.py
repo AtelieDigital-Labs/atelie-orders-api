@@ -1,18 +1,67 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.order import OrderItem
+from app.models.order import OrderItem, OrderStatus
 from app.repositories.order_repository import OrderRepository
 from app.services.cart_service import CartService
 from fastapi import HTTPException
 from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
-from app.schemas.order import OrderCheckoutRequest
+from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
 
 
+VALID_TRANSITIONS = {
+    OrderStatus.PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+    OrderStatus.PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+    OrderStatus.SHIPPED: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+    OrderStatus.DELIVERED: [],
+    OrderStatus.CANCELLED: []
+}
 
 
 class OrderService: 
+    @staticmethod
+    async def update_status_order(session: AsyncSession, order_id: int, user_id: str, update_status: OrderArtisanStatusUpdate):
+        store_id = await CatalogIntegration.get_store_id(user_id)
+
+        order = await OrderRepository.get_order_artisan(session, order_id, store_id)
+
+        if not order:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Pedido não encontrado ou não pertence a este artesão')
+
+        status = update_status.status
+
+        if status not in VALID_TRANSITIONS.get(order.status, []):
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=f'Não é possível trocar o status atual para {update_status.status.label}' )
+        
+        order.status = status
+
+        if status == OrderStatus.SHIPPED and update_status.tracking_code:
+            order.tracking_code = update_status.tracking_code
+        
+        order_updated = await OrderRepository.update_status_order(session, order)
+
+        return order_updated
+        
+
+    @staticmethod
+    async def get_order_artisan_by_id(session: AsyncSession, order_id: int, user_id: str):
+        store_id = await CatalogIntegration.get_store_id(user_id)
+
+        order = await OrderRepository.get_order_artisan(session, order_id, store_id)
+
+        if not order:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Pedido não encontrado ou não pertence a este artesão")
+        
+        return order
+
+    @staticmethod
+    async def get_all_orders_artisan(session: AsyncSession, user_id: str):
+        store_id = await CatalogIntegration.get_store_id(user_id)
+
+        return await OrderRepository.get_all_orders_artisan(session, store_id)
+
+
     @staticmethod
     async def get_order_by_id(session: AsyncSession, order_id: int, user_id: str):
         order = await OrderRepository.get_order(session, order_id, user_id)

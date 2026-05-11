@@ -12,7 +12,7 @@ from app.core.database import Base, TimestampMixin
 
 class OrderStatus(str, enum.Enum):
     PENDING = "PENDING"
-    PAID = 'PAID',
+    PAID = 'PAID'
     PROCESSING = "PROCESSING"
     SHIPPED = 'SHIPPED'
     DELIVERED = "DELIVERED"
