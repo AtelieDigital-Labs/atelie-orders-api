@@ -5,8 +5,13 @@ from http import HTTPStatus
  
 class CatalogIntegration:
     @staticmethod
+<<<<<<< HEAD
     async def get_data_for_product(client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
+=======
+    async def get_store_owner(store_id: str):
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
+>>>>>>> de86099 (refactor: adjust name routers)
 
         response.raise_for_status()
 
@@ -38,7 +43,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_id(user_id: str):
-        base_url = 'http://127.0.0.1:8000/api/catalog/store'
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
 
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -82,7 +87,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_zip(store_id: str):
-        base_url = 'http://127.0.0.1:8000/api/catalog/stores'
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
         
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -97,7 +102,6 @@ class CatalogIntegration:
                 response.raise_for_status()
                 data = response.json()
                 
-                # Acessa o dicionário 'address' e depois pega o 'zip_code' 
                 address_data = data.get('address', {})
                 zip_code = address_data.get('zip_code')
                 
@@ -132,7 +136,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/products') as client:
+        async with AsyncClient(base_url='https://127.0.0.1:8008/api/catalog/products') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
@@ -147,7 +151,7 @@ class CatalogIntegration:
     # Método para ir posterior por RabbitMQ
     @staticmethod
     async def deacrese_stock(paylod: list[dict]):
-        url = 'http://localhost:8000/api/catalog/stock/decrease'
+        url = 'http://localhost:8008/api/catalog/stock/decrease'
 
         async with AsyncClient() as client:
             try:

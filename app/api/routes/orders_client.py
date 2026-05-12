@@ -10,31 +10,33 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import verify_user
 from app.core.database import get_session
 
-router = APIRouter(prefix='/api/orders', tags=['order'], dependencies=[Depends(verify_user)])
+router = APIRouter(prefix='/api/orders', tags=['Users order'], dependencies=[Depends(verify_user)])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-
-# Criação da ordem
-@router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
-async def create(order_data:OrderCheckoutRequest, session: SessionDep, user_auth: dict = Depends(verify_user)):
-    user_id = user_auth["user_id"]
-    token = user_auth["token"]
-
-    return await OrderService.create_new_order(order_data, session, user_id, token)  
  
 
+@router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
+async def list_all_orders(session: SessionDep, user_id: str = Depends(verify_user)):
+    """
+    Lista todos os pedidos do cliente
+    """
+    return await OrderService.get_all_orders(session, user_id)
+
+
 @router.get('/{order_id}', status_code=HTTPStatus.OK, response_model= OrderRead)
-async def list(session: SessionDep, order_id: int,  user_id: str = Depends(verify_user)):
+async def list_order(session: SessionDep, order_id: int,  user_id: str = Depends(verify_user)):
    """
     Lista os detalhes de um pedido
    """
    return await OrderService.get_order_by_id(session, order_id, user_id)
 
 
-@router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
-async def list_orders(session: SessionDep, user_id: str = Depends(verify_user)):
+@router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
+async def create_order(order_data:OrderCheckoutRequest, session: SessionDep, user_auth: dict = Depends(verify_user)):
     """
-    Lista todos os pedidos do cliente
+    Criar um pedido
     """
-    return await OrderService.get_all_orders(session, user_id)
+    user_id = user_auth["user_id"]
+    token = user_auth["token"]
+
+    return await OrderService.create_new_order(order_data, session, user_id, token)  
