@@ -29,7 +29,5 @@ async def success():
 
 
 if __name__ == "__main__":
-    # print("Teste - Pagamento via pix")
-    # asyncio.run(payment())
-    print("Teste - Status de pagamento")
+    print("Teste - Cálculo de frete")
     asyncio.run(success())

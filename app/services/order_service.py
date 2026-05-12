@@ -14,6 +14,7 @@ from app.integrations.payment_integration import PaymentIntegration
 
 VALID_TRANSITIONS = {
     OrderStatus.PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+    OrderStatus.REFUSED: [],
     OrderStatus.PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
     OrderStatus.SHIPPED: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
     OrderStatus.DELIVERED: [],
