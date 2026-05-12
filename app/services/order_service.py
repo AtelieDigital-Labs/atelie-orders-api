@@ -23,7 +23,6 @@ VALID_TRANSITIONS = {
 
 class OrderService: 
     @staticmethod
-<<<<<<< HEAD
     async def update_status_order(session: AsyncSession, order_id: int, user_id: str, update_status: OrderArtisanStatusUpdate):
         store_id = await CatalogIntegration.get_store_id(user_id)
 
@@ -80,10 +79,7 @@ class OrderService:
 
 
     @staticmethod
-    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str):
-=======
     async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str, token: str):
->>>>>>> e0d3970 (refactor: update accounts integration)
         try:
 
             group_id = uuid.uuid4()

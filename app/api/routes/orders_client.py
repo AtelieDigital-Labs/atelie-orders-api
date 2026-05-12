@@ -1,14 +1,9 @@
 from http import HTTPStatus
 from typing import Annotated
 
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends
 from fastapi_pagination import Page
 from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead, OrderResponse
-=======
 from fastapi import APIRouter, Depends, Request, HTTPException
-from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead
->>>>>>> e0d3970 (refactor: update accounts integration)
 from app.services.order_service import OrderService
 from sqlalchemy.ext.asyncio import AsyncSession
 
