@@ -1,6 +1,8 @@
 services:
   order_database:
     image: postgres
+    container_name: postgres_database
+    restart: always
     volumes:
       - pgdata:/var/lib/postgresql/
     environment:
@@ -9,6 +11,17 @@ services:
       POSTGRES_DB: ${DB_NAME}
     ports:
       - "${DB_PORT}:5432"
+  
+  cart_database:
+    image: redis:alpine
+    container_name: redis_database
+    restart: always
+    command: redis-server --requirepass AtelieV20
+    volumes:
+      - rdata:/data
+    ports:
+      - "${DB_PORT_REDIS}:6379"
 
 volumes:
   pgdata:
+  rdata:

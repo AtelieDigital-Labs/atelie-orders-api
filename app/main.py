@@ -8,6 +8,7 @@ from fastapi import FastAPI
 import asyncio
 import sys
 from fastapi_pagination import add_pagination
+from app.core.redis import lifespan
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -17,6 +18,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.DESCRIPTION,
     version=settings.VERSION,
+    lifespan=lifespan
 )
 
 app.include_router(auth_router) # Remover quando conectar com a API de autenticação

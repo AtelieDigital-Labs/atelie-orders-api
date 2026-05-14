@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 import redis.asyncio as redis
 from app.core.config import settings
 from redis.asyncio import Redis
@@ -16,8 +16,9 @@ async def lifespan(app: FastAPI):
     
     yield 
     
-    await redis_client.aclose()
+    await redis_client.close()
+    await pool.disconnect()
+
 
 def get_redis(request: Request) -> Redis:
     return request.app.state.redis
-

@@ -5,14 +5,10 @@ from app.schemas.cart import CartItemCreate
 
 
 class CartService:
-    
-    # verificar se volto a receber redis: Redis
-    def __init__(self, repo: CartRepository):
-        self._repo = repo
 
     # Adicionar um novo item ao carrinho ou icrementar se ele já existir
-    async def add_item(self, item: CartItemCreate, user_id: str):
-        existing_item = await self._repo.get_item(user_id, item.variant_id)
+    async def add_item(redis: Redis, item: CartItemCreate, user_id: str):
+        existing_item = await CartRepository.get_item(redis, user_id, item.product_variant_id)
         
         final_quantity = item.quantity
         
@@ -21,13 +17,14 @@ class CartService:
             
         updated_data = {
             "quantity": final_quantity,
+            "store_id": '1'
         }
         
-        await self._repo.save_item(user_id, item.variant_id, updated_data)
+        await CartRepository.save_item(redis, user_id, item.product_variant_id, updated_data)
         
         return {
-            "variant_id": item.variant_id, 
-            "store_id": item.store_id,
+            "product_variant_id": item.product_variant_id, 
+            "store_id": '1',
             "quantity": updated_data['quantity']
         }
 
