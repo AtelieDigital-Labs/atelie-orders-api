@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.cart_repository import CartRepository
 from redis.asyncio import Redis
 from app.schemas.cart import CartItemCreate
+from app.integrations.catalog_integration import CatalogIntegration
 
 
 class CartService:
@@ -14,17 +15,19 @@ class CartService:
         
         if existing_item:
             final_quantity += existing_item.get("quantity", 0)
+
+        store_id = await CatalogIntegration.get_store_id_for_product(item.product_variant_id)
             
         updated_data = {
             "quantity": final_quantity,
-            "store_id": '1'
+            "store_id": store_id
         }
         
         await CartRepository.save_item(redis, user_id, item.product_variant_id, updated_data)
         
         return {
             "product_variant_id": item.product_variant_id, 
-            "store_id": '1',
+            "store_id": updated_data['store_id'],
             "quantity": updated_data['quantity']
         }
 

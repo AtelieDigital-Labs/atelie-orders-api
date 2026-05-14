@@ -5,6 +5,22 @@ from http import HTTPStatus
 
 class CatalogIntegration:
     @staticmethod
+    async def get_store_id_for_product(variant_id: str):
+        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/products') as client:
+            try:
+                response = await client.get(f'/{variant_id}')
+
+                response.raise_for_status()
+
+                store_id = response.json.get('store_id')
+
+                return store_id
+            except HTTPError as exc:
+                print(f'Erro ao conectar com o Catalog na busca pela loja do produto: {exc}')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
+
+
+    @staticmethod
     async def get_store_id(user_id: str):
         base_url = 'http://127.0.0.1:8000/api/catalog/store'
 
@@ -78,7 +94,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/product') as client:
+        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/products') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
