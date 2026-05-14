@@ -26,3 +26,7 @@ class CartItemReadUpdated(BaseModel):
     quantity: int
     message: str
 
+class CartResponse(BaseModel):
+    items: list[CartItemRead]
+    total_quantity: int
+

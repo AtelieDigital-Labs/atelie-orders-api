@@ -18,7 +18,7 @@ class CartService:
         if existing_item:
             final_quantity += existing_item.get("quantity", 0)
 
-        store_id = '32' # await CatalogIntegration.get_store_id_for_product(item.product_variant_id)
+        store_id = '33' # await CatalogIntegration.get_store_id_for_product(item.product_variant_id)
             
         updated_data = {
             "quantity": final_quantity,
@@ -67,6 +67,34 @@ class CartService:
             "quantity": new_data["quantity"]
         }
 
+    @staticmethod
+    async def get_items(redis: Redis, user_id: str):
+        cart_items = await CartRepository.get_all_items(redis, user_id)
+
+        if not cart_items:
+            return{
+                "items": [],
+                "total_quantity": 0
+            }
+        
+        items_list = []
+        total_quantity = 0
+
+        for variant_id, item_info in cart_items.items():
+            quantity = item_info.get("quantity", 0)
+
+            items_list.append({
+                "product_variant_id": variant_id,
+                "store_id": item_info.get("store_id"),
+                "quantity": quantity
+            })
+            
+            total_quantity += quantity
+
+        return {
+            "items": items_list,
+            "total_quantity": total_quantity
+        }
 
     @staticmethod
     async def clear_cart(redis: Redis, user_id: str):
