@@ -1,18 +1,18 @@
-"""Create Tables Orders
+"""create orders tables
 
-Revision ID: 3ed31cb4bec9
+Revision ID: 7d165db0ae1c
 Revises: 
-Create Date: 2026-04-19 12:22:27.224757
+Create Date: 2026-05-13 19:41:17.665371
 
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
-
 from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '3ed31cb4bec9'
+revision: str = '7d165db0ae1c'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,10 +25,16 @@ def upgrade() -> None:
     sa.Column('order_id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', name='orderstatus'), nullable=False),
     sa.Column('price', sa.DECIMAL(precision=10, scale=2), nullable=False),
+    sa.Column('shipping_cost', sa.DECIMAL(precision=10, scale=2), nullable=False),
     sa.Column('user_id', sa.String(length=50), nullable=False),
     sa.Column('store_id', sa.String(length=50), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('shipping_address', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('shipping_method', sa.String(length=100), nullable=False),
+    sa.Column('tracking_code', sa.String(length=100), nullable=True),
+    sa.Column('payment_method', sa.String(length=50), nullable=False),
+    sa.Column('transaction_id', sa.String(length=100), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('order_id')
     )
     op.create_index(op.f('ix_orders_store_id'), 'orders', ['store_id'], unique=False)
@@ -39,8 +45,8 @@ def upgrade() -> None:
     sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('unit_price', sa.DECIMAL(precision=10, scale=2), nullable=False),
     sa.Column('order_id', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['order_id'], ['orders.order_id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('item_id')
     )
