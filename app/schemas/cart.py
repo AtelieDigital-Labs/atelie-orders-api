@@ -12,7 +12,7 @@ class CartItemCreate(BaseModel):
 
 class CartItemUpdate(BaseModel):
     """Schema para atualizar a quantidade de um item no carrinho."""
-    quantity: Optional[int] = None
+    quantity: int = Field(ge=0, description="A quantidade desejada na tela")
 
 
 class CartItemRead(BaseModel):
@@ -21,4 +21,8 @@ class CartItemRead(BaseModel):
     store_id: str
     quantity: int
 
+class CartItemReadUpdated(BaseModel):
+    product_variant_id: int
+    quantity: int
+    message: str
 
