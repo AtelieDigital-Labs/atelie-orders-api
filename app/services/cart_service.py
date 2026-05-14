@@ -8,7 +8,6 @@ from http import HTTPStatus
 
 
 class CartService:
-
     # Adicionar um novo item ao carrinho ou icrementar se ele já existir
     @staticmethod
     async def add_item(redis: Redis, item: CartItemCreate, user_id: str):
@@ -67,6 +66,16 @@ class CartService:
             "message": "Item atualizado com sucesso.",
             "quantity": new_data["quantity"]
         }
+
+
+    @staticmethod
+    async def clear_cart(redis: Redis, user_id: str):
+        await CartRepository.clear_cart(redis, user_id)
+
+        return{
+            "message": "Carrinho removido com sucesso!"
+        }
+
 
     # @staticmethod
     # async def get_cart_items(session: AsyncSession, user_id: str):

@@ -29,3 +29,11 @@ async def update_item_quantity(redis: RedisDep, item_id: int, item: CartItemUpda
     # user_id = user_auth["user_id"]
 
     return await CartService.update_item_quantity(redis, item_id, item, user_auth)
+
+@router.delete('/', status_code=HTTPStatus.OK)
+async def clear_cart(redis: RedisDep, user_auth: str = Depends(verify_user)):
+    """Limpa os dados do carrinho"""
+
+    # user_id = user_auth["user_id"]
+
+    return await CartService.clear_cart(redis, user_auth)
