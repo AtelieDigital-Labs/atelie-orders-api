@@ -5,20 +5,36 @@ from http import HTTPStatus
 
 class CatalogIntegration:
     @staticmethod
-    async def get_store_id_for_product(variant_id: str):
+    async def get_data_for_product(client: AsyncClient, product_variant_id: str):
+        response = await client.get(f'/{product_variant_id}')
+
+        response.raise_for_status()
+
+        payload = response.json()
+        store_id = payload.get('store_id')
+        unit_price = payload.get('unit_price')
+        stock = payload.get('stock')
+
+        return (product_variant_id, {'store_id': store_id, 'unit_price': unit_price, 'stock': stock})
+
+    
+    @staticmethod
+    async def fetch_all_store_id(products_variants: list[str]):
         async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/products') as client:
-            try:
-                response = await client.get(f'/{variant_id}')
+            
+            tasks = [CatalogIntegration.get_data_for_product(client, variant_id) for variant_id in products_variants]
+            results = await gather(*tasks, return_exceptions=True)
 
-                response.raise_for_status()
+            valid_data = {}
+            
+            for variant_id, result in zip(products_variants, results):
+                if isinstance(result, Exception):
+                    print(f"Erro ao buscar o produto {variant_id} no catálogo: {result}")
+                    valid_data[variant_id] = {'store_id': 'default', 'unit_price': 0.0, 'stock': 0}
+                else:
+                    valid_data[variant_id] = result[1]
 
-                store_id = response.json.get('store_id')
-
-                return store_id
-            except HTTPError as exc:
-                print(f'Erro ao conectar com o Catalog na busca pela loja do produto: {exc}')
-                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
-
+            return valid_data
 
     @staticmethod
     async def get_store_id(user_id: str):

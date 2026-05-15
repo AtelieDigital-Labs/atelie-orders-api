@@ -20,6 +20,7 @@ class CartItemRead(BaseModel):
     product_variant_id: str
     store_id: str
     quantity: int
+    unit_price: float
 
 class CartItemReadUpdated(BaseModel):
     product_variant_id: str
@@ -29,4 +30,5 @@ class CartItemReadUpdated(BaseModel):
 class CartResponse(BaseModel):
     items: list[CartItemRead]
     total_quantity: int
+    total_price: float
 
