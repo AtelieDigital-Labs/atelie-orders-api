@@ -4,7 +4,7 @@ from app.core.database import get_session
 from app.services.webhook_service import WebhookService
 from typing import Annotated
 
-router = APIRouter(prefix="/api/orders/webhook", tags=["Webhooks"])
+router = APIRouter(prefix="/api/v1/orders/webhook", tags=["Webhooks"])
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]

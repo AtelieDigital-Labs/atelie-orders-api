@@ -27,9 +27,9 @@ app = FastAPI(
 
 app.include_router(auth_router) # Remover quando conectar com a API de autenticação
 app.include_router(cart_router)
+app.include_router(checkout_router)
 app.include_router(order_router)
 app.include_router(artisan_router)
-app.include_router(checkout_router)
 app.include_router(webhook_router)
 
 
