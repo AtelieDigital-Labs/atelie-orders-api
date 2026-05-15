@@ -8,7 +8,6 @@ from http import HTTPStatus
 
 
 class CartService:
-    # Adicionar um novo item ao carrinho ou icrementar se ele já existir
     @staticmethod
     async def add_item(redis: Redis, item: CartItemCreate, user_id: str):
         existing_item = await CartRepository.get_item(redis, user_id, item.product_variant_id)
@@ -34,7 +33,7 @@ class CartService:
         }
 
     @staticmethod
-    async def update_item_quantity(redis: Redis, variant_id: int, update_data: CartItemUpdate, user_id: str):
+    async def update_item_quantity(redis: Redis, variant_id: str, update_data: CartItemUpdate, user_id: str):
         existing_item = await CartRepository.get_item(redis, user_id, variant_id)
 
         if not existing_item:
@@ -97,27 +96,17 @@ class CartService:
         }
 
     @staticmethod
+    async def clear_cart_item(redis: Redis, item_id: str, user_id: str):
+        await CartRepository.remove_item(redis, user_id, item_id)
+
+        return{
+            "message": "Produto removido do carrinho com sucesso!"
+        }
+
+    @staticmethod
     async def clear_cart(redis: Redis, user_id: str):
         await CartRepository.clear_cart(redis, user_id)
 
         return{
             "message": "Carrinho removido com sucesso!"
         }
-
-
-    # @staticmethod
-    # async def get_cart_items(session: AsyncSession, user_id: str):
-    #     cart = await CartRepository.get_cart(session, user_id)
-
-    #     if not cart or not cart.items:
-    #         return None
-        
-    #     return cart.items
-    
-    # @staticmethod
-    # async def clear_cart(session: AsyncSession, user_id: str):
-    #     cart = await CartRepository.get_cart(session, user_id)
-
-    #     if cart:
-    #         await CartRepository.clear_cart_items(session, cart.cart_id)
-        

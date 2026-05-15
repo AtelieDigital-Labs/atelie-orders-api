@@ -22,7 +22,7 @@ class CartItemRead(BaseModel):
     quantity: int
 
 class CartItemReadUpdated(BaseModel):
-    product_variant_id: int
+    product_variant_id: str
     quantity: int
     message: str
 

@@ -31,12 +31,20 @@ async def add_to_cart(redis: RedisDep, item: CartItemCreate,user_auth: str = Dep
     return await CartService.add_item(redis, item, user_auth)
 
 @router.patch('/items/{item_id}', status_code=HTTPStatus.OK, response_model=CartItemReadUpdated)
-async def update_item_quantity(redis: RedisDep, item_id: int, item: CartItemUpdate,user_auth: str = Depends(verify_user)):
+async def update_item_quantity(redis: RedisDep, item_id: str, item: CartItemUpdate,user_auth: str = Depends(verify_user)):
     """Altera a quantidade de um produto do carrinho"""
 
     # user_id = user_auth["user_id"]
 
     return await CartService.update_item_quantity(redis, item_id, item, user_auth)
+
+@router.delete('/items/{item_id}', status_code=HTTPStatus.OK)
+async def clear_cart_item(redis: RedisDep, item_id: str, user_auth: str = Depends(verify_user)):
+    """Remove um item do carrinho"""
+
+    # user_id = user_auth["user_id"]
+
+    return await CartService.clear_cart_item(redis, item_id, user_auth)
 
 @router.delete('/', status_code=HTTPStatus.OK)
 async def clear_cart(redis: RedisDep, user_auth: str = Depends(verify_user)):
