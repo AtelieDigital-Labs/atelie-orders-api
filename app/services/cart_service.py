@@ -1,20 +1,112 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.cart_repository import CartRepository
+from redis.asyncio import Redis
+from app.schemas.cart import CartItemCreate, CartItemUpdate
+from app.integrations.catalog_integration import CatalogIntegration
+from fastapi import HTTPException
+from http import HTTPStatus
+
+
 
 class CartService:
     @staticmethod
-    async def get_cart_items(session: AsyncSession, user_id: str):
-        cart = await CartRepository.get_cart(session, user_id)
-
-        if not cart or not cart.items:
-            return None
+    async def add_item(redis: Redis, item: CartItemCreate, user_id: str):
+        existing_item = await CartRepository.get_item(redis, user_id, item.product_variant_id)
         
-        return cart.items
-    
+        final_quantity = item.quantity
+        
+        if existing_item:
+            final_quantity += existing_item.get("quantity", 0)
+
+        store_id = '33' # await CatalogIntegration.get_store_id_for_product(item.product_variant_id)
+            
+        updated_data = {
+            "quantity": final_quantity,
+            "store_id": store_id
+        }
+        
+        await CartRepository.save_item(redis, user_id, item.product_variant_id, updated_data)
+        
+        return {
+            "product_variant_id": item.product_variant_id, 
+            "store_id": updated_data['store_id'],
+            "quantity": updated_data['quantity']
+        }
+
     @staticmethod
-    async def clear_cart(session: AsyncSession, user_id: str):
-        cart = await CartRepository.get_cart(session, user_id)
+    async def update_item_quantity(redis: Redis, variant_id: str, update_data: CartItemUpdate, user_id: str):
+        existing_item = await CartRepository.get_item(redis, user_id, variant_id)
 
-        if cart:
-            await CartRepository.clear_cart_items(session, cart.cart_id)
+        if not existing_item:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"O item {variant_id} não foi encontrado no carrinho."
+            )
         
+        if update_data.quantity == 0:
+            await CartRepository.remove_item(redis, user_id, variant_id)
+            print("removido")
+            return {
+                "product_variant_id": variant_id,
+                "message": "Item removido do carrinho com sucesso.",
+                "quantity": 0
+            }
+        
+        store_id = '32'#await CatalogIntegration.get_store_id_for_product(variant_id)
+            
+        new_data = {
+            "quantity": update_data.quantity,
+            "store_id": store_id
+        }
+
+        await CartRepository.save_item(redis, user_id, variant_id, new_data)
+
+        return {
+            "product_variant_id": variant_id,
+            "message": "Item atualizado com sucesso.",
+            "quantity": new_data["quantity"]
+        }
+
+    @staticmethod
+    async def get_items(redis: Redis, user_id: str):
+        cart_items = await CartRepository.get_all_items(redis, user_id)
+
+        if not cart_items:
+            return{
+                "items": [],
+                "total_quantity": 0
+            }
+        
+        items_list = []
+        total_quantity = 0
+
+        for variant_id, item_info in cart_items.items():
+            quantity = item_info.get("quantity", 0)
+
+            items_list.append({
+                "product_variant_id": variant_id,
+                "store_id": item_info.get("store_id"),
+                "quantity": quantity
+            })
+            
+            total_quantity += quantity
+
+        return {
+            "items": items_list,
+            "total_quantity": total_quantity
+        }
+
+    @staticmethod
+    async def clear_cart_item(redis: Redis, item_id: str, user_id: str):
+        await CartRepository.remove_item(redis, user_id, item_id)
+
+        return{
+            "message": "Produto removido do carrinho com sucesso!"
+        }
+
+    @staticmethod
+    async def clear_cart(redis: Redis, user_id: str):
+        await CartRepository.clear_cart(redis, user_id)
+
+        return{
+            "message": "Carrinho removido com sucesso!"
+        }
