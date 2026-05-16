@@ -22,6 +22,7 @@ async def verify_user(token: str = Depends(oauth2_scheme)):
             "user_id": user_id, 
             "token": token
         }
+    
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,

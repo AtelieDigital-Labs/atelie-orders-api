@@ -16,18 +16,23 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
  
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
-async def list_all_orders(session: SessionDep, user_id: str = Depends(verify_user)):
+async def list_all_orders(session: SessionDep, user_auth: dict = Depends(verify_user)):
     """
     Lista todos os pedidos do cliente
     """
+
+    user_id = user_auth["user_id"]
+
     return await OrderService.get_all_orders(session, user_id)
 
 
 @router.get('/{order_id}', status_code=HTTPStatus.OK, response_model= OrderRead)
-async def list_order(session: SessionDep, order_id: int,  user_id: str = Depends(verify_user)):
+async def list_order(session: SessionDep, order_id: int,  user_auth: dict = Depends(verify_user)):
    """
     Lista os detalhes de um pedido
    """
+   user_id = user_auth["user_id"]
+   
    return await OrderService.get_order_by_id(session, order_id, user_id)
 
 

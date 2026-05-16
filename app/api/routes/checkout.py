@@ -25,10 +25,13 @@ RedisDep = Annotated[Redis, Depends(get_redis)]
 async def get_shipping_options(
     address_id: str, 
     redis: RedisDep,
-    user_id: str = Depends(verify_user) 
+    user_auth: dict = Depends(verify_user) 
 ):
 
-    address_data = await AccountsIntegration.get_address(address_id)
+    user_id = user_auth["user_id"]
+    token = user_auth["token"]
+
+    address_data = await AccountsIntegration.get_address(address_id, token)
     
     validate_address_user(address_data, user_id)
     
