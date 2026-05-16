@@ -1,28 +1,30 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from http import HTTPStatus
+from redis.asyncio import Redis
+from app.core.redis import get_redis
+
 
 
 from app.services.shipping_service import ShippingService
 from app.integrations.accounts_integration import AccountsIntegration
 from app.schemas.shipping import CartShippingResponse
 
-from fastapi import HTTPException
 from typing import Annotated
-from app.core.database import get_session
 from app.api.dependencies import verify_user
 from app.validators.validate import validate_address_user
 
 
 router = APIRouter(prefix='/api/v1/checkout', tags=['Checkout'])
 
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+RedisDep = Annotated[Redis, Depends(get_redis)]
+
 
 
 @router.get("/shipping/{address_id}", status_code=HTTPStatus.OK, response_model=CartShippingResponse)
 async def get_shipping_options(
     address_id: str, 
-    session: AsyncSession = Depends(get_session),
+    redis: RedisDep,
     user_id: str = Depends(verify_user) 
 ):
 
@@ -33,7 +35,7 @@ async def get_shipping_options(
     destination_zip = address_data.get('zip_code')
 
     options = await ShippingService.calculate_cart_shipping(
-        session=session, 
+        redis=redis, 
         user_id=user_id, 
         destination_zip=destination_zip
     )

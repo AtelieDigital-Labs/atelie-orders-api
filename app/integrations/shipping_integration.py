@@ -5,9 +5,10 @@ from app.core.config import settings
 class ShippingIntegration:
     @staticmethod
     async def calculate_store_freight(origin_zip: str, dest_zip: str, products_payload: list) -> list:
-        url = "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate"
+        url = "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate"
         
         headers = {
+            "Accept": "application/json",
             "Authorization": f"Bearer {settings.MELHOR_ENVIO_TOKEN}",
             "Content-Type": "application/json",
             "User-Agent": "AtelieDigital/1.0 (g.renata@escolar.ifrn.edu.br)" 
