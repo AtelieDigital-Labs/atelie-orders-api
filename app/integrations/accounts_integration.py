@@ -8,7 +8,7 @@ class AccountsIntegration:
     # passar o token no headers 
     async def get_data_user(token: str):
 
-        base_url = "http://127.0.0.1:8001/api/accounts/me/" 
+        base_url = "http://127.0.0.1:8008/api/accounts/me/" 
         
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -40,7 +40,7 @@ class AccountsIntegration:
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url="http://localhost:8001/api/accounts/") as client:
+        async with AsyncClient(base_url="http://localhost:8008/api/accounts/") as client:
             try:
                 response = await client.get(f'/{user_id}/financials', headers=headers)
 
@@ -67,7 +67,7 @@ class AccountsIntegration:
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url = "http://127.0.0.1:8001/api/accounts/addresses/") as client:
+        async with AsyncClient(base_url = "http://127.0.0.1:8008/api/accounts/addresses/") as client:
             try:
                 response = await client.get(f'/{address_id}/', headers=headers)
 

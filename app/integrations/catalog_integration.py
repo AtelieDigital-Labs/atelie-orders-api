@@ -129,7 +129,7 @@ class CatalogIntegration:
         length = response.json().get('length')
 
 
-        return (product_variant_id, {'price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
+        return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):

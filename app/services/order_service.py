@@ -9,10 +9,8 @@ from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
 import uuid
-from decimal import Decimal
-from typing import Annotated
-from app.core.redis import get_redis
 from redis.asyncio import Redis
+from decimal import Decimal
 from app.integrations.payment_integration import PaymentIntegration
 
 VALID_TRANSITIONS = {
@@ -23,8 +21,6 @@ VALID_TRANSITIONS = {
     OrderStatus.DELIVERED: [],
     OrderStatus.CANCELLED: []
 }
-
-RedisDep = Annotated[Redis, Depends(get_redis)]
 
 
 class OrderService: 
@@ -85,9 +81,9 @@ class OrderService:
 
 
     @staticmethod
-    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, user_id: str, token: str):
+    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, redis: Redis, user_id: str, token: str):
         try:
-
+            
             group_id = uuid.uuid4()
             total_cart_amount = Decimal("0.00")
             fee_percentage = Decimal("0.05")
@@ -97,6 +93,7 @@ class OrderService:
             address_data = await AccountsIntegration.get_address(address_id=order_data.address_id, token=token)
 
             validate_address_user(address_data, user_id)
+
 
             address_snapshot = {
                 "street" : address_data.get('street'),
@@ -108,14 +105,20 @@ class OrderService:
                 'zip_code': address_data.get('zip_code')
             } 
 
-            cart_data = await CartService.get_items(redis=RedisDep, user_id=user_id)
+            cart_data = await CartService.get_items(redis=redis, user_id=user_id)
 
             if not cart_data["items"]:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
             
-            products_ids = [item["product_variant_id"] for item in cart_data["items"]]
+            # ---------------------------
+            # REMOVER AÇÕES DE TESTE
+            # ---------------------------
+            
+            # products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
+            catalog_data = {"sku004": {
+                'unit_price': 1.00, 'stock': 2, 'weight':5, 'height':30, 'width': 20, 'length': 60
+            }}#await CatalogIntegration.fetch_all_prices(products_ids)
 
             items_store = {}
             for item in cart_data["items"]:
@@ -135,7 +138,7 @@ class OrderService:
                         status_code=HTTPStatus.BAD_REQUEST,
                         detail=f'Estoque insuficiente para o produto {variant_id}'
                     )
-
+                
                 store_id = item["store_id"]
                 if store_id not in items_store:
                     items_store[store_id] = []
@@ -155,7 +158,7 @@ class OrderService:
                 # Taxa do Ateliê Digital por pedido
                 store_fee = products_price * fee_percentage
                 # Valor do artesão 
-                artisan_amount = (products_price - store_fee) + store_shipping_cost
+                artisan_ammount = Decimal(str((products_price - store_fee) + store_shipping_cost))
                 total_cart_amount += (products_price + store_shipping_cost)
                 
                 order_payload = {
@@ -168,7 +171,7 @@ class OrderService:
                     "shipping_address": address_snapshot,
                     "payment_method": order_data.payment_method,
                     "platform_fee": store_fee,
-                    "artisan_amount": artisan_amount
+                    "artisan_ammount": artisan_ammount
                 }
                 
                 new_order = await OrderRepository.create_order(
@@ -185,7 +188,7 @@ class OrderService:
                     order_items_create.append(
                         OrderItem(
                             order_id=new_order.order_id,
-                            product_variant_id=item.product_variant_id,
+                            product_variant_id=variant_id,
                             quantity=item["quantity"],
                             unit_price=unit_price 
                         )
@@ -195,11 +198,18 @@ class OrderService:
             
             await session.commit()
 
+            try: 
+                await CartService.clear_cart(redis=redis, user_id=user_id)
+
+            except Exception as e:
+                print(f"Falha ao limpar carrinho do usuário. Erro {e}")
+
         except HTTPException:
             await session.rollback()
             raise
         except Exception as e:
             await session.rollback()
+            print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
                 detail="Ocorreu um erro interno ao processar seu pedido."
@@ -207,7 +217,7 @@ class OrderService:
 
         try:
             payment_payload = {
-                "total_amount": float(total_cart_amount),
+                "total_amount": str(float(total_cart_amount)),
                 "payment_method": order_data.payment_method.lower(),
                 "checkout_group_id": str(group_id),
                 "buyer_email": client_data['email'],
@@ -218,24 +228,21 @@ class OrderService:
             mp_response = await PaymentIntegration.generate_payment(payload=payment_payload)
 
             if not mp_response:
-                await session.rollback()
                 raise Exception("Falha ao gerar pagamento na api de pagamento")
             
-            pix = mp_response['point_of_interaction']['transaction_data']['qr_code_base64']
-            pix_copia_cola = mp_response['point_of_interaction']['transaction_data']['qr_code']
+            try:
+                payment_data = mp_response['transactions']['payments'][0]['payment_method']
+                pix = payment_data['qr_code_base64']
+                pix_copia_cola = payment_data['qr_code']
+            except (KeyError, IndexError) as e:
+                raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
 
         except Exception as e:
+            print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
-                detail="Ocorreu um erro interno ao processar seu pedido."
+                detail="Pedido criado! Porém, ocorreu um erro ao gerar o pagamento. Acesses Meus Pedidos para tentar pagar novamente."
             )
-
-        try: 
-            await CartService.clear_cart(redis=RedisDep, user_id=user_id)
-
-        except Exception as e:
-            print("Falha ao limpar carrinho do usuário")
-
 
         return {
             'message':'Pedido gerado', 

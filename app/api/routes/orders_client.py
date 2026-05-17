@@ -6,13 +6,17 @@ from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderR
 from fastapi import APIRouter, Depends, Request, HTTPException
 from app.services.order_service import OrderService
 from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
 from app.api.dependencies import verify_user
 from app.core.database import get_session
+from app.core.redis import get_redis
 
 router = APIRouter(prefix='/api/v1/orders', tags=['Users order'], dependencies=[Depends(verify_user)])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+RedisDep = Annotated[Redis, Depends(get_redis)]
+
  
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
@@ -37,11 +41,11 @@ async def list_order(session: SessionDep, order_id: int,  user_auth: dict = Depe
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
-async def create_order(order_data:OrderCheckoutRequest, session: SessionDep, user_auth: dict = Depends(verify_user)):
+async def create_order(order_data:OrderCheckoutRequest, session: SessionDep, redis: RedisDep,user_auth: dict = Depends(verify_user)):
     """
     Criar um pedido
     """
     user_id = user_auth["user_id"]
     token = user_auth["token"]
 
-    return await OrderService.create_new_order(order_data, session, user_id, token)  
+    return await OrderService.create_new_order(order_data, session, redis, user_id, token)  

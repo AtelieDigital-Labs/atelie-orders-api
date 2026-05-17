@@ -65,7 +65,7 @@ class WebhookService:
                 try:
                     artisan_id = await CatalogIntegration.get_store_owner(order.store_id)
                     
-                    # Dispara o crédito no DRF
+                    # Dispara o crédito no DRF - Mensageria
                     await AccountsIntegration.credit_wallet(
                         user_id=artisan_id,
                         amount=float(order.artisan_amount),
