@@ -110,15 +110,10 @@ class OrderService:
             if not cart_data["items"]:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
             
-            # ---------------------------
-            # REMOVER AÇÕES DE TESTE
-            # ---------------------------
             
-            # products_ids = [item["product_variant_id"] for item in cart_data["items"]]
+            products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = {"sku005": {
-                'unit_price': 1.00, 'stock': 2, 'weight':5, 'height':30, 'width': 20, 'length': 60
-            }}#await CatalogIntegration.fetch_all_prices(products_ids)
+            catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
 
             items_store = {}
             for item in cart_data["items"]:
