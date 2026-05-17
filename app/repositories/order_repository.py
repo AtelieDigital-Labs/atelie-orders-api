@@ -55,3 +55,10 @@ class OrderRepository:
     async def create_order_items(session: AsyncSession, items_data: OrderItem):
         session.add_all(items_data)
         await session.flush()
+
+
+    @staticmethod
+    async def get_order_group(session: AsyncSession, group_id: str):
+        query = select(Order).where(Order.checkout_group_id == group_id).options(selectinload(Order.items))
+        result = await session.execute(query)
+        return result.scalars().all()

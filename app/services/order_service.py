@@ -116,7 +116,7 @@ class OrderService:
             
             # products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = {"sku004": {
+            catalog_data = {"sku005": {
                 'unit_price': 1.00, 'stock': 2, 'weight':5, 'height':30, 'width': 20, 'length': 60
             }}#await CatalogIntegration.fetch_all_prices(products_ids)
 
@@ -231,6 +231,7 @@ class OrderService:
                 raise Exception("Falha ao gerar pagamento na api de pagamento")
             
             try:
+                mercadopago_id = mp_response['id']
                 payment_data = mp_response['transactions']['payments'][0]['payment_method']
                 pix = payment_data['qr_code_base64']
                 pix_copia_cola = payment_data['qr_code']
@@ -248,6 +249,7 @@ class OrderService:
             'message':'Pedido gerado', 
             'checkout_group_id':str(group_id),
             'payment_info': {
+                'id': mercadopago_id,
                 'qr_code_base64': pix,
                 'qr_code': pix_copia_cola
             }
