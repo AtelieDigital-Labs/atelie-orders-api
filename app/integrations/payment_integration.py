@@ -71,8 +71,8 @@ class PaymentIntegration:
                 status_code = exc.response.status_code if hasattr(exc, 'response') else "Desconhecido"
                 detalhes = exc.response.text if hasattr(exc, 'response') else str(exc)
                 
-                print(f"🚨 Erro {status_code} ao consultar a Ordem {order_id}")
-                print(f"🧐 Detalhes do MP: {detalhes}")
+                print(f"Erro {status_code} ao consultar a Ordem {order_id}")
+                print(f"Detalhes do MP: {detalhes}")
                 
                 print(f"Erro ao verificar pagamento {order_id} no Mercado Pago: {exc}")
                 return None
