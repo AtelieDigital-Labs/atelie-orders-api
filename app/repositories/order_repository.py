@@ -44,15 +44,7 @@ class OrderRepository:
 
     @staticmethod
     async def create_order(session: AsyncSession, order_data: dict):
-        new_order = Order(
-            user_id=order_data.user_id,
-            store_id=order_data.store_id,
-            price=order_data.price,
-            shipping_cost=order_data.shipping_cost,
-            shipping_address=order_data.shipping_address,
-            shipping_method=order_data.shipping_method,
-            payment_method=order_data.payment_method
-        )
+        new_order = Order(**order_data)
         
         session.add(new_order)
         await session.flush()
@@ -63,3 +55,10 @@ class OrderRepository:
     async def create_order_items(session: AsyncSession, items_data: OrderItem):
         session.add_all(items_data)
         await session.flush()
+
+
+    @staticmethod
+    async def get_order_group(session: AsyncSession, group_id: str):
+        query = select(Order).where(Order.checkout_group_id == group_id).options(selectinload(Order.items))
+        result = await session.execute(query)
+        return result.scalars().all()

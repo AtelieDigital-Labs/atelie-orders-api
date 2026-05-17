@@ -15,41 +15,41 @@ router = APIRouter(prefix='/api/v1/carts', tags=['Carts'], dependencies=[Depends
 RedisDep = Annotated[Redis, Depends(get_redis)]
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=CartResponse)
-async def get_cart(redis: RedisDep, user_auth: str = Depends(verify_user)):
+async def get_cart(redis: RedisDep, user_auth: dict = Depends(verify_user)):
     """Listar os itens do carrinho"""
 
-    # user_id = user_auth["user_id"]
+    user_id = user_auth["user_id"]
 
-    return await CartService.get_items(redis, user_auth)
+    return await CartService.get_items(redis, user_id)
 
 @router.post('/items/', status_code=HTTPStatus.CREATED, response_model=CartItemRead)
-async def add_to_cart(redis: RedisDep, item: CartItemCreate,user_auth: str = Depends(verify_user)):
+async def add_to_cart(redis: RedisDep, item: CartItemCreate,user_auth: dict = Depends(verify_user)):
     """Adicionar um produto ao carrinho"""
 
-    # user_id = user_auth["user_id"]
+    user_id = user_auth["user_id"]
 
-    return await CartService.add_item(redis, item, user_auth)
+    return await CartService.add_item(redis, item, user_id)
 
 @router.patch('/items/{item_id}', status_code=HTTPStatus.OK, response_model=CartItemReadUpdated)
 async def update_item_quantity(redis: RedisDep, item_id: str, item: CartItemUpdate,user_auth: str = Depends(verify_user)):
     """Altera a quantidade de um produto do carrinho"""
 
-    # user_id = user_auth["user_id"]
+    user_id = user_auth["user_id"]
 
-    return await CartService.update_item_quantity(redis, item_id, item, user_auth)
+    return await CartService.update_item_quantity(redis, item_id, item, user_id)
 
 @router.delete('/items/{item_id}', status_code=HTTPStatus.OK)
-async def clear_cart_item(redis: RedisDep, item_id: str, user_auth: str = Depends(verify_user)):
+async def clear_cart_item(redis: RedisDep, item_id: str, user_auth: dict = Depends(verify_user)):
     """Remove um item do carrinho"""
 
-    # user_id = user_auth["user_id"]
+    user_id = user_auth["user_id"]
 
-    return await CartService.clear_cart_item(redis, item_id, user_auth)
+    return await CartService.clear_cart_item(redis, item_id, user_id)
 
 @router.delete('/', status_code=HTTPStatus.OK)
-async def clear_cart(redis: RedisDep, user_auth: str = Depends(verify_user)):
+async def clear_cart(redis: RedisDep, user_auth: dict = Depends(verify_user)):
     """Limpa os dados do carrinho"""
 
-    # user_id = user_auth["user_id"]
+    user_id = user_auth["user_id"]
 
-    return await CartService.clear_cart(redis, user_auth)
+    return await CartService.clear_cart(redis, user_id)

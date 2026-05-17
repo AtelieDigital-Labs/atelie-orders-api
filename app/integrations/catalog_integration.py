@@ -2,8 +2,31 @@ from httpx import AsyncClient, HTTPError
 from asyncio import gather
 from fastapi import HTTPException
 from http import HTTPStatus
-
+ 
 class CatalogIntegration:
+    @staticmethod
+    async def get_store_owner(store_id: str):
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
+
+        async with AsyncClient(base_url=base_url) as client:
+            try:
+                response = await client.get(f'/{store_id}/')
+                
+                if response.status_code == 404:
+                    raise HTTPException(
+                        status_code=HTTPStatus.NOT_FOUND, 
+                        detail=f'Loja {store_id} não encontrada.'
+                    )
+                    
+                response.raise_for_status()
+                store_owner = response.json.get('artisan_id')
+                    
+                return store_owner
+
+            except HTTPError as exc:
+                print(f'Erro ao conectar com o Catalog na busca do dono da loja: {exc}')
+                raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
+            
     @staticmethod
     async def get_data_for_product(client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
@@ -38,7 +61,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_id(user_id: str):
-        base_url = 'http://127.0.0.1:8000/api/catalog/store'
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
 
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -60,7 +83,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_zip(store_id: str):
-        base_url = 'http://127.0.0.1:8000/api/catalog/store'
+        base_url = 'http://127.0.0.1:8008/api/catalog/stores'
         
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -75,7 +98,6 @@ class CatalogIntegration:
                 response.raise_for_status()
                 data = response.json()
                 
-                # Acessa o dicionário 'address' e depois pega o 'zip_code' 
                 address_data = data.get('address', {})
                 zip_code = address_data.get('zip_code')
                 
@@ -106,11 +128,11 @@ class CatalogIntegration:
         length = response.json().get('length')
 
 
-        return (product_variant_id, {'price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
+        return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='https://127.0.0.1:8000/api/catalog/products') as client:
+        async with AsyncClient(base_url='https://127.0.0.1:8008/api/catalog/products') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
@@ -125,7 +147,7 @@ class CatalogIntegration:
     # Método para ir posterior por RabbitMQ
     @staticmethod
     async def deacrese_stock(paylod: list[dict]):
-        url = 'http://localhost:8000/api/catalog/stock/decrease'
+        url = 'http://localhost:8008/api/catalog/stock/decrease'
 
         async with AsyncClient() as client:
             try:
@@ -135,4 +157,3 @@ class CatalogIntegration:
             except HTTPError as exc:
                 print(f'Erro ao tentar baixar estoque no Catalog: {exc}')
                 return False
-            

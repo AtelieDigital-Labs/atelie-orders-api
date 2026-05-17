@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     # Secret key para decodificar os tokens JWT enviados pelo API Gateway/Auth
     SECRET_KEY: str 
     ALGORITHM: str 
+    MERCADO_PAGO_TOKEN: str
+    MELHOR_ENVIO_TOKEN: str
+    WEBHOOK_SECRET: str
 
     DATABASE_URL: str
 

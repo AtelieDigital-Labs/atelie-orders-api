@@ -65,7 +65,6 @@ class MockOrder:
 
 # --- 3. OS TESTES REAIS ---
 
-# O decorator @patch substitui o método original por um "falso" durante o teste
 @patch("app.services.order_service.OrderService.get_order_by_id")
 def test_get_order_by_id_success(mock_get_order_by_id):
     # Prepara o cenário: dizemos pro mock retornar o nosso pedido falso
