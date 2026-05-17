@@ -11,16 +11,12 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.post("/mercadopago")
-async def mercadopago_webhook(
-    request: Request, 
-    session: SessionDep
-):
+async def mercadopago_webhook(request: Request, session: SessionDep):
     """
     Endpoint para receber notificações de pagamento do Mercado Pago.
     """
     try:
-        payload = await request.json()
-        result = await WebhookService.process_mercadopago_webhook(payload, session)
+        result = await WebhookService.process_mercadopago_webhook(request, session)
         
         return {"received": True, "details": result}
         

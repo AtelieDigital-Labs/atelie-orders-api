@@ -5,83 +5,116 @@ from app.integrations.payment_integration import PaymentIntegration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.integrations.accounts_integration import AccountsIntegration
 from app.repositories.order_repository import OrderRepository
+from app.core.config import settings
+import hmac
+import hashlib
+from fastapi import Request
 
 class WebhookService:
+
+    MP_WEBHOOK_SECRET=settings.WEBHOOK_SECRET
+
     @staticmethod
-    async def process_mercadopago_webhook(payload: dict, session: AsyncSession):
-        # 1. O Mercado Pago envia a ação e o ID do objeto dentro de 'data' ou 'resource'
-        action = payload.get("action") or payload.get("topic")
+    async def process_mercadopago_webhook(request: Request, session: AsyncSession):
+        # Validação de segurança
+        x_signature = request.headers.get("x-signature")
+        x_request_id = request.headers.get("x-request-id")
         
-        # Só processamos se for uma atualização de pagamento
-        if action not in ["order.created", "order.updated", "order"]:
-            return {"status": "ignorado", "reason": "Nenhum evento de pagamento"}
+        data_id_url = request.query_params.get("data.id")
 
-        # Extrai o ID do pagamento (a estrutura do JSON pode variar levemente na API v1)
-        payment_id = payload.get("data", {}).get("id")
-        if not payment_id:
-            payment_id = payload.get("resource", "").split("/")[-1] # Tenta extrair da URL
+        if not x_signature or not x_request_id or not data_id_url:
+            return {"status": "ignorado", "reason": "Headers ou Query Params ausentes"}
+
+        parts = x_signature.split(",")
+        ts = None
+        hash_v1 = None
+        
+        for part in parts:
+            key_value = part.split("=", 1)
+            if len(key_value) == 2:
+                key = key_value[0].strip()
+                val = key_value[1].strip()
+                if key == "ts":
+                    ts = val
+                elif key == "v1":
+                    hash_v1 = val
+
+        data_id_lower = data_id_url.lower()
+        manifest = f"id:{data_id_lower};request-id:{x_request_id};ts:{ts};"
+        
+        hmac_obj = hmac.new(
+            WebhookService.MP_WEBHOOK_SECRET.encode(), 
+            msg=manifest.encode(), 
+            digestmod=hashlib.sha256
+        )
+
+        meu_hash = hmac_obj.hexdigest()
+
+        # print("\n--- DEBUG HMAC ---")
+        # print(f"Secret Lida da Memória: '{WebhookService.MP_WEBHOOK_SECRET}'")
+        # print(f"Manifest gerado: {manifest}")
+        # print(f"Hash do Mercado Pago (v1): {hash_v1}")
+        # print(f"Meu Hash Calculado: {meu_hash}")
+        # print("------------------\n")
+        
+        if meu_hash != hash_v1:
+            print("Tentativa de fraude detectada: Assinatura HMAC inválida.")
+            return {"status": "erro", "reason": "Assinatura HMAC inválida"}
+        
+        payload = await request.json()
+        action = payload.get("action", "")
+
+        # Busca do status
+        if not action.startswith("order."):
+            return {"status": "ignorado", "reason": f"Tópico {action} não é de order"}
+        
+        order_info = await PaymentIntegration.get_merchant_order(data_id_url)
+
+        if not order_info:
+            return {"status": "error", "reason": "Ordem não encontrada no Mercado Pago"}
+
+        status = order_info.get("status") 
+        group_id_str = order_info.get("external_reference") 
+
+        if status in ["paid", "closed"] and group_id_str:
             
-        if not payment_id:
-            return {"status": "ignorado", "reason": "Nenhum pagamento com essa identificação encontrado"}
-
-        # 2. Faz a requisição reversa (Segurança contra fraudes)
-        payment_info = await PaymentIntegration.verify_payment(payment_id)
-        if not payment_info:
-            return {"status": "error", "reason": "Pagamento não encontrado no Mercado Pago"}
-
-        status = payment_info.get("status")
-
-        group_id_str = payment_info.get("external_reference") 
-
-        # ALTERAR PARA APPROVED DEPOIS, USO ASSIM PORQUE NÃO FOI PAGO
-        if status == "pending" and group_id_str:
+            orders = await OrderRepository.get_order_group(session=session, group_id=group_id_str)
             
-            # Busca todas as ordens vinculadas a esse pagamento
-            orders = await OrderRepository.get_order_group(session=session, group_id = group_id_str)
-            
-
             if not orders:
-                return {"status": "error", "reason": "Não foi encontrado nenhum pedido com essa identificação"}
+                return {"status": "error", "reason": "Nenhum pedido local correspondente"}
 
-            # Verificação de Idempotência: Se a primeira já estiver PAGA, ignoramos o webhook repetido
             if orders[0].status == OrderStatus.PAID:
-                return {"status": "successo", "reason": "Processado"}
+                return {"status": "successo", "reason": "Já processado"}
 
             stock_payload = []
 
-            # 3. Itera sobre cada loja do carrinho
             for order in orders:
-                # Atualiza o status
                 order.status = OrderStatus.PAID
-                order.transaction_id = str(payment_id) # Salva o ID do Mercado Pago para rastreio
+                order.transaction_id = str(data_id_url) 
 
-                # Prepara os itens para baixar o estoque do Catalog
                 for item in order.items:
                     stock_payload.append({
                         "product_variant_id": item.product_variant_id,
                         "quantity": item.quantity
                     })
 
-                # 4. Acha o dono da loja e credita a carteira
                 try:
                     artisan_id = await CatalogIntegration.get_store_owner(order.store_id)
-                    
-                    # Dispara o crédito no DRF - Mensageria
+                    # PASSAR MÉTODO PARA MENSAGERIA
                     await AccountsIntegration.credit_wallet(
                         user_id=artisan_id,
                         amount=float(order.artisan_amount),
                         reference_order_id=str(order.order_id)
                     )
                 except Exception as e:
-                    print(f"Erro Crítico ao repassar valor para o artesão da loja {order.store_id}: {e}")
+                    print(f"Erro ao creditar artesão: {e}")
 
-            # 5. Efetiva a baixa no estoque em lote 
+            # PASSAR MÉTODO PARA MENSSAGERIA
             if stock_payload:
                 await CatalogIntegration.deacrese_stock(stock_payload)
 
-            # Salva tudo no banco do Orders
             await session.commit()
-
             return {"status": "successo", "reason": "Pedidos atualizados e fundos distribuídos."}
 
-        return {"status": "ignorado", "reason": f"Status do pagamento: {status}"}
+        return {"status": "ignorado", "reason": f"Status da ordem: {status}"}
+

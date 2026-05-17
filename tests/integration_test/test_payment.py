@@ -25,7 +25,7 @@ async def payment():
 
 
 async def verify():
-    payment_id = 'ORDTST01KR74PNXJMZ7H0Z6AH601CVGM'
+    payment_id = 'ORDTST01KRVP8NG16SP1P2HCYEQ5785X'
 
     print('Iniciando a requisição para verificar o status do pagamento')
 

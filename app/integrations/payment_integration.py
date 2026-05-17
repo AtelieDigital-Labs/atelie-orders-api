@@ -53,8 +53,8 @@ class PaymentIntegration:
                 return {}
 
     @staticmethod
-    async def verify_payment(payment_id: str):
-        url = f"https://api.mercadopago.com/v1/orders/{payment_id}"
+    async def get_merchant_order(order_id: str):
+        url = f"https://api.mercadopago.com/v1/orders/{order_id}"
 
         headers = {
             "Authorization": f"Bearer {settings.MERCADO_PAGO_TOKEN}",
@@ -68,5 +68,11 @@ class PaymentIntegration:
                 return response.json()
             
             except HTTPError as exc:
-                print(f"Erro ao verificar pagamento {payment_id} no Mercado Pago: {exc}")
-                return {}
+                status_code = exc.response.status_code if hasattr(exc, 'response') else "Desconhecido"
+                detalhes = exc.response.text if hasattr(exc, 'response') else str(exc)
+                
+                print(f"🚨 Erro {status_code} ao consultar a Ordem {order_id}")
+                print(f"🧐 Detalhes do MP: {detalhes}")
+                
+                print(f"Erro ao verificar pagamento {order_id} no Mercado Pago: {exc}")
+                return None

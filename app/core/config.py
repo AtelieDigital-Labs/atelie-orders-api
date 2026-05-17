@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ALGORITHM: str 
     MERCADO_PAGO_TOKEN: str
     MELHOR_ENVIO_TOKEN: str
+    WEBHOOK_SECRET: str
 
     DATABASE_URL: str
 
