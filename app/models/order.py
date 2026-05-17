@@ -13,7 +13,7 @@ from app.core.database import Base, TimestampMixin
 
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "PENDING"
+    PENDING = "PENDING" # alterar nome para AGUARDANDO PAGAMENTO
     PAID = 'PAID'
     REFUSED = 'REFUSED'
     PROCESSING = "PROCESSING"
