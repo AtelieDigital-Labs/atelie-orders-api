@@ -5,13 +5,10 @@ from http import HTTPStatus
  
 class CatalogIntegration:
     @staticmethod
-<<<<<<< HEAD
     async def get_data_for_product(client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
-=======
     async def get_store_owner(store_id: str):
         base_url = 'http://127.0.0.1:8008/api/catalog/stores'
->>>>>>> de86099 (refactor: adjust name routers)
 
         response.raise_for_status()
 
