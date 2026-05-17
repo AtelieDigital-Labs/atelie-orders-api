@@ -1,12 +1,9 @@
 from app.api.routes.auth_test import router as auth_router
 from app.api.routes.orders_client import router as order_router
 from app.api.routes.checkout import router as checkout_router
-<<<<<<< HEAD
 from app.api.routes.orders_artisan import router as artisan_router
 from app.api.routes.carts import router as cart_router
-=======
 from app.api.routes.webhook import router as webhook_router
->>>>>>> 6dc8465 (feat: include webhook payment)
 from app.core.config import settings
 from fastapi import FastAPI
 import asyncio
