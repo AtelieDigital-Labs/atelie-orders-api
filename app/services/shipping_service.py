@@ -22,10 +22,7 @@ class ShippingService:
 
         # 2. Busca dimensões no Catalog
         products_ids = [item["product_variant_id"] for item in cart_data["items"]]
-        catalog_data = {
-            'sku001':
-            {'unit_price': 2.00, 'stock': 10, 'weight':5, 'height':30, 'width': 20, 'length': 60}
-        } #await CatalogIntegration.fetch_all_prices(products_ids)
+        catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
 
         # 3. Agrupa os produtos por Loja e monta o formato que o Melhor Envio exige
         stores_payloads = {}
@@ -56,7 +53,7 @@ class ShippingService:
         
         for store_id in stores_ids_list:
             # Busca o CEP da loja no microsserviço Catalog
-            store_zip = '59965000'#await CatalogIntegration.get_store_zip(store_id) 
+            store_zip = await CatalogIntegration.get_store_zip(store_id) 
             
             payload_produtos = stores_payloads[store_id]
             
