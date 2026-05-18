@@ -7,6 +7,7 @@ from app.integrations.shipping_integration import ShippingIntegration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.services.cart_service import CartService
 from app.schemas.shipping import CartShippingResponse, ShippingOption
+from app.repositories.shipping_repository import ShippingRepository
 
 
 
@@ -21,7 +22,10 @@ class ShippingService:
 
         # 2. Busca dimensões no Catalog
         products_ids = [item["product_variant_id"] for item in cart_data["items"]]
-        catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
+        catalog_data = {
+            'sku001':
+            {'unit_price': 2.00, 'stock': 10, 'weight':5, 'height':30, 'width': 20, 'length': 60}
+        } #await CatalogIntegration.fetch_all_prices(products_ids)
 
         # 3. Agrupa os produtos por Loja e monta o formato que o Melhor Envio exige
         stores_payloads = {}
@@ -52,7 +56,7 @@ class ShippingService:
         
         for store_id in stores_ids_list:
             # Busca o CEP da loja no microsserviço Catalog
-            store_zip = await CatalogIntegration.get_store_zip(store_id) 
+            store_zip = '59965000'#await CatalogIntegration.get_store_zip(store_id) 
             
             payload_produtos = stores_payloads[store_id]
             
@@ -65,7 +69,6 @@ class ShippingService:
         results = await gather(*tasks)
         
         # 5. Processa os resultados para criar o frete "Integral"
-        # Variáveis de Totais...
         total_cheapest_price = Decimal("0.00")
         max_cheapest_time = 0
         breakdown_cheapest = {}
@@ -74,7 +77,6 @@ class ShippingService:
         max_fastest_time = 0
         breakdown_fastest = {}
         
-        # 1. Nova Flag para avisar o front-end
         requires_pickup = False 
 
         for store_id, options in zip(stores_ids_list, results):
@@ -83,7 +85,7 @@ class ShippingService:
 
             valid_options = [opt for opt in options if "error" not in opt]
 
-            # 2. O Plano B (Fallback) entra aqui!
+            # 2. O Plano B 
             if not valid_options:
                 requires_pickup = True
                 
@@ -97,7 +99,6 @@ class ShippingService:
                 cheapest_store_opt = min(valid_options, key=lambda x: float(x.get("price", 0)))
                 fastest_store_opt = min(valid_options, key=lambda x: int(x.get("delivery_time", 99)))
 
-            # Soma nos totais
             price_cheap = Decimal(str(cheapest_store_opt.get("price")))
             price_fast = Decimal(str(fastest_store_opt.get("price")))
 
@@ -118,8 +119,7 @@ class ShippingService:
             name_economy = "Econômico"
             name_express = "Expresso"
 
-        # 4. Retorna o Schema montadinho com os nomes atualizados
-        return CartShippingResponse(
+        response = CartShippingResponse(
             cheapest=ShippingOption(
                 name=name_economy,
                 total_price=total_cheapest_price,
@@ -133,3 +133,7 @@ class ShippingService:
                 stores_breakdown=breakdown_fastest
             )
         )
+
+        await ShippingRepository.save_freight(redis=redis, user_id=user_id, quote_json=response.model_dump_json())
+
+        return response

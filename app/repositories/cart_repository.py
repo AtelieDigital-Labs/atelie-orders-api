@@ -35,7 +35,7 @@ class CartRepository:
         await redis.expire(key, 864000)
 
         return new_quantity
-
+ 
     @staticmethod
     async def set_item_quantity(redis: Redis, user_id: str, variant_id: str, quantity: int):
         key = f"cart:{user_id}"

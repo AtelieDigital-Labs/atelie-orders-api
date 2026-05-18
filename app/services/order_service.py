@@ -12,6 +12,7 @@ import uuid
 from redis.asyncio import Redis
 from decimal import Decimal
 from app.integrations.payment_integration import PaymentIntegration
+from app.repositories.shipping_repository import ShippingRepository
 
 VALID_TRANSITIONS = {
     OrderStatus.PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
@@ -94,7 +95,6 @@ class OrderService:
 
             validate_address_user(address_data, user_id)
 
-
             address_snapshot = {
                 "street" : address_data.get('street'),
                 "number" : address_data.get('number'),
@@ -105,15 +105,31 @@ class OrderService:
                 'zip_code': address_data.get('zip_code')
             } 
 
+            saved_quotes = await ShippingRepository.get_freight(redis=redis, user_id=user_id)
+
+            if not saved_quotes:
+                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Cotação de frete expirada ou não encontrada. Retorne a página anterior e selecione o frete novamente.")
+            
+            if order_data.shipping_method == "Econômico":
+                shipping_costs_per_store = saved_quotes["cheapest"]["stores_breakdown"] 
+            elif order_data.shipping_method == "Expresso":
+                shipping_costs_per_store = saved_quotes["fastest"]["stores_breakdown"]
+            else:
+                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Método de frete inválido.")
+
+
             cart_data = await CartService.get_items(redis=redis, user_id=user_id)
 
             if not cart_data["items"]:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
             
             
-            products_ids = [item["product_variant_id"] for item in cart_data["items"]]
+            # products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
+            catalog_data = {
+                'sku001':
+                {'unit_price': 2.00, 'stock': 10, 'weight':5, 'height':30, 'width': 20, 'length': 60}
+            }#await CatalogIntegration.fetch_all_prices(products_ids)
 
             items_store = {}
             for item in cart_data["items"]:
@@ -149,7 +165,7 @@ class OrderService:
                     quantity = Decimal(str(item["quantity"]))
                     products_price += (unit_price * quantity)
 
-                store_shipping_cost = Decimal(str(order_data.shipping_costs_per_store.get(store_id, 0.00)))
+                store_shipping_cost = Decimal(str(shipping_costs_per_store.get(store_id, 0.00)))
                 # Taxa do Ateliê Digital por pedido
                 store_fee = products_price * fee_percentage
                 # Valor do artesão 
@@ -194,6 +210,7 @@ class OrderService:
             await session.commit()
 
             try: 
+                await ShippingRepository.delete_freight(redis=redis, user_id=user_id)
                 await CartService.clear_cart(redis=redis, user_id=user_id)
 
             except Exception as e:
@@ -204,7 +221,7 @@ class OrderService:
             raise
         except Exception as e:
             await session.rollback()
-            print(f"🚨 ERRO REAL CAPTURADO: {e}")
+            print(f"ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
                 detail="Ocorreu um erro interno ao processar seu pedido."
