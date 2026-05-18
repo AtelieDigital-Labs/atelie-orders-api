@@ -26,8 +26,8 @@ VALID_TRANSITIONS = {
 
 class OrderService: 
     @staticmethod
-    async def update_status_order(session: AsyncSession, order_id: int, user_id: str, update_status: OrderArtisanStatusUpdate):
-        store_id = await CatalogIntegration.get_store_id(user_id)
+    async def update_status_order(session: AsyncSession, order_id: int, token: str, update_status: OrderArtisanStatusUpdate):
+        store_id = await CatalogIntegration.get_store_id(token)
 
         order = await OrderRepository.get_order_artisan(session, order_id, store_id)
 
@@ -50,8 +50,8 @@ class OrderService:
         
 
     @staticmethod
-    async def get_order_artisan_by_id(session: AsyncSession, order_id: int, user_id: str):
-        store_id = await CatalogIntegration.get_store_id(user_id)
+    async def get_order_artisan_by_id(session: AsyncSession, order_id: int, token: str):
+        store_id = await CatalogIntegration.get_store_id(token)
 
         order = await OrderRepository.get_order_artisan(session, order_id, store_id)
 
@@ -61,8 +61,8 @@ class OrderService:
         return order
 
     @staticmethod
-    async def get_all_orders_artisan(session: AsyncSession, user_id: str):
-        store_id = await CatalogIntegration.get_store_id(user_id)
+    async def get_all_orders_artisan(session: AsyncSession, token: str):
+        store_id = await CatalogIntegration.get_store_id(token)
 
         return await OrderRepository.get_all_orders_artisan(session, store_id)
 
@@ -124,12 +124,9 @@ class OrderService:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
             
             
-            # products_ids = [item["product_variant_id"] for item in cart_data["items"]]
+            products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = {
-                'sku001':
-                {'unit_price': 2.00, 'stock': 10, 'weight':5, 'height':30, 'width': 20, 'length': 60}
-            }#await CatalogIntegration.fetch_all_prices(products_ids)
+            catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
 
             items_store = {}
             for item in cart_data["items"]:

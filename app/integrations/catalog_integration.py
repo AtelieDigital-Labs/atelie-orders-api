@@ -11,6 +11,7 @@ class CatalogIntegration:
         async with AsyncClient(base_url=base_url) as client:
             try:
                 response = await client.get(f'/{store_id}/artisan')
+
                 
                 if response.status_code == 404:
                     raise HTTPException(
@@ -19,8 +20,11 @@ class CatalogIntegration:
                     )
                     
                 response.raise_for_status()
-                store_owner = response.json.get('artisan_id')
-                    
+
+                response_data = response.json()
+
+                store_owner = response_data.get('artisan_id')
+
                 return store_owner
 
             except HTTPError as exc:
@@ -34,16 +38,24 @@ class CatalogIntegration:
         response.raise_for_status()
 
         payload = response.json()
-        store_id = payload.get('store_id')
-        unit_price = payload.get('unit_price')
-        stock = payload.get('stock')
+        store_id = str(payload.get('store_id'))
+
+        variations = payload.get('variations', [])
+
+        if variations:
+            first_variation = variations[0]
+            unit_price = first_variation.get('price')
+            stock = first_variation.get('stock')
+        else:
+            unit_price = 0.0
+            stock = 0
 
         return (product_variant_id, {'store_id': store_id, 'unit_price': unit_price, 'stock': stock})
 
     
     @staticmethod
-    async def fetch_all_store_id(products_variants: list[str]):
-        async with AsyncClient(base_url='https://127.0.0.1:8001/api/v1/catalog/products') as client:
+    async def fetch_all_products(products_variants: list[str]):
+        async with AsyncClient(base_url='http://127.0.0.1:8001/api/v1/catalog/products') as client:
             
             tasks = [CatalogIntegration.get_data_for_product(client, variant_id) for variant_id in products_variants]
             results = await gather(*tasks, return_exceptions=True)
@@ -60,21 +72,26 @@ class CatalogIntegration:
             return valid_data
 
     @staticmethod
-    async def get_store_id(user_id: str):
+    async def get_store_id(token: str):
        
-        # trocar pela /stores/me - passar token pelo header
-        base_url = 'http://127.0.0.1:8001/api/catalog/stores'
+        base_url = 'http://127.0.0.1:8001/api/v1/catalog/stores/me'
 
-        async with AsyncClient(base_url=base_url) as client:
+        headers = {
+            "Authorization": f"Bearer {token}"  
+        }
+
+        async with AsyncClient() as client:
             try:
-                response = await client.get(f'/{user_id}')
+                response = await client.get(url=base_url,headers=headers)
 
                 if response.status_code == 404:
                     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Loja não encontrada')
                 
                 response.raise_for_status()
 
-                store_id = response.json().get('id')
+                data = response.json()
+
+                store_id = data.get('id')
 
                 return store_id
             
@@ -121,20 +138,25 @@ class CatalogIntegration:
         response = await client.get(f'/{product_variant_id}')
 
         response.raise_for_status()
-        
-        unit_price = response.json().get('price')
-        stock = response.json().get('stock')
-        weight = response.json().get('weight')
-        height = response.json().get('height')
-        width = response.json().get('width')
-        length = response.json().get('length')
 
+        data = response.json()
+
+        variations = data.get('variations', [])
+
+        
+        first_variation = variations[0]
+        unit_price = first_variation.get('price')
+        stock = first_variation.get('stock')
+        weight = first_variation.get('weight')
+        height = first_variation.get('height')
+        width = first_variation.get('width')
+        length = first_variation.get('length')
 
         return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='https://127.0.0.1:8001/api/v1/catalog/products') as client:
+        async with AsyncClient(base_url='http://127.0.0.1:8001/api/v1/catalog/products') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
