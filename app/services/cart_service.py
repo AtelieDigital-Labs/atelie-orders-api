@@ -12,7 +12,6 @@ class CartService:
     async def add_item(redis: Redis, item: CartItemCreate, user_id: str):        
         data = await CatalogIntegration.fetch_all_products([item.product_variant_id])
 
-        print(data)
         product_data = data.get(item.product_variant_id, {})
 
         available_stock = product_data.get("stock", 0) 

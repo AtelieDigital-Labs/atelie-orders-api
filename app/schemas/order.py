@@ -2,14 +2,14 @@ from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from app.models.order import OrderStatus
 
 
 class ShippingAddressRead(BaseModel):
     street: str
-    number: str
+    number: Union[str, int]
     complement: Optional[str] = None
     neighborhood: str
     city: str
