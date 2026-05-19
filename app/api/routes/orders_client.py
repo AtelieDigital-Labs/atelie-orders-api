@@ -12,7 +12,7 @@ from app.api.dependencies import verify_user
 from app.core.database import get_session
 from app.core.redis import get_redis
 
-router = APIRouter(prefix='/api/v1/orders', tags=['Users order'], dependencies=[Depends(verify_user)])
+router = APIRouter(prefix='/api/v1/orders', tags=['Users order'])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
