@@ -18,14 +18,14 @@ class OrderRepository:
 
     @staticmethod
     async def get_order_artisan(session: AsyncSession, order_id: int, store_id: str):
-        query = select(Order).where(Order.order_id == order_id).where(Order.store_id == store_id).options(selectinload(Order.items))
+        query = select(Order).where(Order.order_id == order_id).where(Order.store_id == store_id).where(Order.status != 'PENDING').options(selectinload(Order.items))
 
         order = await session.execute(query)
         return order.scalars().first()
 
     @staticmethod
     async def get_all_orders_artisan(session: AsyncSession, store_id: str):
-        query = select(Order).where(Order.store_id == store_id).order_by(Order.created_at.desc())
+        query = select(Order).where(Order.store_id == store_id).where(Order.status != 'PENDING').order_by(Order.created_at.desc())
 
         return await paginate(session, query)
 

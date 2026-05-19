@@ -29,7 +29,7 @@ class OrderService:
     async def update_status_order(session: AsyncSession, order_id: int, token: str, update_status: OrderArtisanStatusUpdate):
         store_id = await CatalogIntegration.get_store_id(token)
 
-        order = await OrderRepository.get_order_artisan(session, order_id, store_id)
+        order = await OrderRepository.get_order_artisan(session, order_id, str(store_id))
 
         if not order:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Pedido não encontrado ou não pertence a este artesão')
@@ -53,7 +53,7 @@ class OrderService:
     async def get_order_artisan_by_id(session: AsyncSession, order_id: int, token: str):
         store_id = await CatalogIntegration.get_store_id(token)
 
-        order = await OrderRepository.get_order_artisan(session, order_id, store_id)
+        order = await OrderRepository.get_order_artisan(session, order_id, str(store_id))
 
         if not order:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Pedido não encontrado ou não pertence a este artesão")
@@ -64,7 +64,7 @@ class OrderService:
     async def get_all_orders_artisan(session: AsyncSession, token: str):
         store_id = await CatalogIntegration.get_store_id(token)
 
-        return await OrderRepository.get_all_orders_artisan(session, store_id)
+        return await OrderRepository.get_all_orders_artisan(session, str(store_id))
 
 
     @staticmethod
