@@ -6,7 +6,7 @@ from http import HTTPStatus
 class CatalogIntegration:
     @staticmethod
     async def get_store_owner(store_id: str):
-        base_url = 'http://127.0.0.1:8001/api/v1/catalog/stores'
+        base_url = 'http://127.0.0.1:8008/api/v1/catalog/stores'
 
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -38,24 +38,18 @@ class CatalogIntegration:
         response.raise_for_status()
 
         payload = response.json()
+
         store_id = str(payload.get('store_id'))
-
-        variations = payload.get('variations', [])
-
-        if variations:
-            first_variation = variations[0]
-            unit_price = first_variation.get('price')
-            stock = first_variation.get('stock')
-        else:
-            unit_price = 0.0
-            stock = 0
+        unit_price = payload.get('price')
+        stock = payload.get('stock')
+    
 
         return (product_variant_id, {'store_id': store_id, 'unit_price': unit_price, 'stock': stock})
 
     
     @staticmethod
     async def fetch_all_products(products_variants: list[str]):
-        async with AsyncClient(base_url='http://127.0.0.1:8001/api/v1/catalog/products') as client:
+        async with AsyncClient(base_url='http://127.0.0.1:8008/api/v1/catalog/products/variations') as client:
             
             tasks = [CatalogIntegration.get_data_for_product(client, variant_id) for variant_id in products_variants]
             results = await gather(*tasks, return_exceptions=True)
@@ -74,7 +68,7 @@ class CatalogIntegration:
     @staticmethod
     async def get_store_id(token: str):
        
-        base_url = 'http://127.0.0.1:8001/api/v1/catalog/stores/me'
+        base_url = 'http://127.0.0.1:8008/api/v1/catalog/stores/me'
 
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -102,7 +96,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_zip(store_id: str):
-        base_url = 'http://127.0.0.1:8001/api/v1/catalog/stores'
+        base_url = 'http://127.0.0.1:8008/api/v1/catalog/stores'
         
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -140,23 +134,19 @@ class CatalogIntegration:
         response.raise_for_status()
 
         data = response.json()
-
-        variations = data.get('variations', [])
-
         
-        first_variation = variations[0]
-        unit_price = first_variation.get('price')
-        stock = first_variation.get('stock')
-        weight = first_variation.get('weight')
-        height = first_variation.get('height')
-        width = first_variation.get('width')
-        length = first_variation.get('length')
+        unit_price = data.get('price')
+        stock = data.get('stock')
+        weight = data.get('weight')
+        height = data.get('height')
+        width = data.get('width')
+        length = data.get('length')
 
         return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='http://127.0.0.1:8001/api/v1/catalog/products') as client:
+        async with AsyncClient(base_url='http://127.0.0.1:8008/api/v1/catalog/products/variations') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
@@ -171,7 +161,7 @@ class CatalogIntegration:
     # Método para ir posterior por RabbitMQ
     @staticmethod
     async def deacrese_stock(paylod: list[dict]):
-        url = 'http://localhost:8001/api/v1/catalog/stock/decrease'
+        url = 'http://localhost:8008/api/v1/catalog/stock/decrease'
 
         async with AsyncClient() as client:
             try:

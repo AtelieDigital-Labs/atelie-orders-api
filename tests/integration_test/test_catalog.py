@@ -31,7 +31,7 @@ async def fetch_all_products():
 async def get_store_id():
     print('Iniciando a requisição para pegar os dados da loja do artesão...')
 
-    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTQwMjU0LCJpYXQiOjE3NzkxMzY2NTQsImp0aSI6IjJmNTkyZTJkNzIwZDQ3ZmJiNjU5NGNlMWI3Yjg0YjM5IiwidXNlcl9pZCI6IjQifQ.ZKe4lI3KDoE0RAE_6qapNyPDF7LZEVLeXtF4JaxFlYY'
+    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc5MTU0OTExLCJpYXQiOjE3NzkxNTEzMTEsImp0aSI6IjI1OWNjN2E3MjliMDQyZjJhZDNjY2E0YzEyYTJmYTNlIiwidXNlcl9pZCI6IjQifQ.xXhjdFxtHZlLctVjgNWUPqooupxvckf38SBUGGwRUkg'
     try:
         result = await CatalogIntegration.get_store_id(token)
         print("Sucesso! Dados retornados:")
@@ -69,16 +69,16 @@ async def fetch_all_prices():
 
 if __name__ == "__main__":
     print("Teste - Dados da loja")
-    # asyncio.run(get_store_owner())
+    asyncio.run(get_store_owner())
     print("-----------------")
     print("Teste - Dados dos produtos para o carrinho")
-    # asyncio.run(fetch_all_products())
+    asyncio.run(fetch_all_products())
     print("-----------------")
     print("Teste - Dados da loja do artesão")
-    #asyncio.run(get_store_id())
+    asyncio.run(get_store_id())
     print("-----------------")
     print("Teste - Dados do endereço do artesão")
-    # asyncio.run(get_store_zip())
+    asyncio.run(get_store_zip())
     print("-----------------")
     print("Teste - Dados do produto para compra")
     asyncio.run(fetch_all_prices())
