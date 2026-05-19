@@ -2,11 +2,15 @@ from http import HTTPStatus
 
 from app.core.config import settings
 from fastapi import Depends, HTTPException, Header
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import ExpiredSignatureError, JWTError, jwt
 
+security = HTTPBearer()
 
-async def verify_user(token: str = Header(..., description="Token de autenticação")):
+async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    token = credentials.credentials
+    
     try: 
         dic = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM,])
         user_id = dic.get("user_id")
