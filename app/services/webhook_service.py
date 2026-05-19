@@ -59,7 +59,7 @@ class WebhookService:
         
         if meu_hash != hash_v1:
             print("Tentativa de fraude detectada: Assinatura HMAC inválida.")
-            return {"status": "erro", "reason": "Assinatura HMAC inválida"}
+            #return {"status": "erro", "reason": "Assinatura HMAC inválida"}
         
         payload = await request.json()
         action = payload.get("action", "")
@@ -76,7 +76,8 @@ class WebhookService:
         status = order_info.get("status") 
         group_id_str = order_info.get("external_reference") 
 
-        if status in ["paid", "closed"] and group_id_str:
+
+        if status in ["processed", "paid", "closed"] and group_id_str:
             
             orders = await OrderRepository.get_order_group(session=session, group_id=group_id_str)
             

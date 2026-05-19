@@ -25,12 +25,12 @@ async def payment():
 
 
 async def verify():
-    payment_id = 'ORDTST01KRVP8NG16SP1P2HCYEQ5785X'
+    payment_id = 'ORDTST01KRYP4R3YZEND3J6G9FWDWMQ3'
 
     print('Iniciando a requisição para verificar o status do pagamento')
 
     try:
-        result = await PaymentIntegration.verify_payment(payment_id)
+        result = await PaymentIntegration.get_merchant_order(payment_id)
         print("Sucesso! Dados retornados:")
         print(result)
     

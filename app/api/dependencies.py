@@ -5,8 +5,6 @@ from fastapi import Depends, HTTPException, Header
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
-# Quando tiver a conexão com a API atualizar a rota
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token-mock")
 
 async def verify_user(token: str = Header(..., description="Token de autenticação")):
     try: 
