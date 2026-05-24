@@ -7,3 +7,4 @@ alembic upgrade head
 
 echo "Iniciando o servidor FastAPI..."
 exec uvicorn --host 0.0.0.0 --port 8000 app.main:app
+

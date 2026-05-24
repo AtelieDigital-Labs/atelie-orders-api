@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     REDIS_URL: str
+
+    CATALOG_API_BASE_URL: str
+    ACCOUNTS_API_BASE_URL: str
     
     # Essa configuração diz ao Pydantic para ler o arquivo .env automaticamente
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

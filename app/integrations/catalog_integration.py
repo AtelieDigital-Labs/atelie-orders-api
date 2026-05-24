@@ -2,11 +2,12 @@ from httpx import AsyncClient, HTTPError
 from asyncio import gather
 from fastapi import HTTPException
 from http import HTTPStatus
+from app.core.config import settings
  
 class CatalogIntegration:
     @staticmethod
     async def get_store_owner(store_id: str):
-        base_url = 'http://catalog_api:8008/api/v1/catalog/stores'
+        base_url = f'{settings.CATALOG_API_BASE_URL}/stores'
 
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -49,7 +50,7 @@ class CatalogIntegration:
     
     @staticmethod
     async def fetch_all_products(products_variants: list[str]):
-        async with AsyncClient(base_url='http://catalog_api:8008/api/v1/catalog/products/variations') as client:
+        async with AsyncClient(base_url=f'{settings.CATALOG_API_BASE_URL}/products/variations') as client:
             
             tasks = [CatalogIntegration.get_data_for_product(client, variant_id) for variant_id in products_variants]
             results = await gather(*tasks, return_exceptions=True)
@@ -68,7 +69,7 @@ class CatalogIntegration:
     @staticmethod
     async def get_store_id(token: str):
        
-        base_url = 'http://catalog_api:8008/api/v1/catalog/stores/me'
+        base_url = f'{settings.CATALOG_API_BASE_URL}/stores/me'
 
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -96,7 +97,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def get_store_zip(store_id: str):
-        base_url = 'http://catalog_api:8008/api/v1/catalog/stores'
+        base_url = f'{settings.CATALOG_API_BASE_URL}/stores'
         
         async with AsyncClient(base_url=base_url) as client:
             try:
@@ -146,7 +147,7 @@ class CatalogIntegration:
 
     @staticmethod
     async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url='http://catalog_api:8008/api/v1/catalog/products/variations') as client:
+        async with AsyncClient(base_url=f'{settings.CATALOG_API_BASE_URL}/products/variations') as client:
             try:
                 tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
 
@@ -161,7 +162,7 @@ class CatalogIntegration:
     # Método para ir posterior por RabbitMQ
     @staticmethod
     async def deacrese_stock(paylod: list[dict]):
-        url = 'http://catalog_api:8008/api/v1/catalog/stock/decrease'
+        url = f'{settings.CATALOG_API_BASE_URL}/stock/decrease'
 
         async with AsyncClient() as client:
             try:
