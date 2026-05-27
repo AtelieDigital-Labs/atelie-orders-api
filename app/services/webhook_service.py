@@ -9,6 +9,9 @@ from app.core.config import settings
 import hmac
 import hashlib
 from fastapi import Request
+from ..messaging.publishers.order_paid import publisher_order_paid 
+from ..messaging.events.order_paid import OrderPaidEvent, OrderItemEvent
+
 
 class WebhookService:
 
@@ -86,35 +89,37 @@ class WebhookService:
 
             if orders[0].status == OrderStatus.PAID:
                 return {"status": "successo", "reason": "Já processado"}
-
-            stock_payload = []
+            
+            events_to_publish = []
 
             for order in orders:
                 order.status = OrderStatus.PAID
                 order.transaction_id = str(data_id_url) 
+                artisan_id = await CatalogIntegration.get_store_owner(order.store_id)
 
-                for item in order.items:
-                    stock_payload.append({
-                        "product_variant_id": item.product_variant_id,
-                        "quantity": item.quantity
-                    })
-
-                try:
-                    artisan_id = await CatalogIntegration.get_store_owner(order.store_id)
-                    # PASSAR MÉTODO PARA MENSAGERIA
-                    await AccountsIntegration.credit_wallet(
-                        user_id=artisan_id,
-                        amount=float(order.artisan_amount),
-                        reference_order_id=str(order.order_id)
+                event_items = [
+                    OrderItemEvent(
+                        product_variant_id=item.product_variant_id,
+                        quantity=item.quantity
                     )
-                except Exception as e:
-                    print(f"Erro ao creditar artesão: {e}")
+                    for item in order.items
+                ]
+                event = OrderPaidEvent(
+                    order_id=str(order.order_id),
+                    store_id=order.store_id,
+                    artisan_id=artisan_id,
+                    customer_id=order.user_id,
+                    total_amount=order.artisan_ammount,
+                    items=event_items,
+                )
 
-            # PASSAR MÉTODO PARA MENSSAGERIA
-            if stock_payload:
-                await CatalogIntegration.deacrese_stock(stock_payload)
+                events_to_publish.append(event)
 
             await session.commit()
+
+            for event in events_to_publish:
+                publisher_order_paid(event)
+
             return {"status": "successo", "reason": "Pedidos atualizados e fundos distribuídos."}
 
         return {"status": "ignorado", "reason": f"Status da ordem: {status}"}

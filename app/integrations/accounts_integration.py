@@ -2,13 +2,14 @@ from httpx import AsyncClient, HTTPError
 from asyncio import gather
 from fastapi import HTTPException
 from http import HTTPStatus
+from app.core.config import settings
 
 class AccountsIntegration:
     @staticmethod
     # passar o token no headers 
     async def get_data_user(token: str):
 
-        base_url = "http://127.0.0.1:8001/api/accounts/me/" 
+        base_url = f'{settings.ACCOUNTS_API_BASE_URL}/me/'
         
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -40,7 +41,7 @@ class AccountsIntegration:
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url="http://localhost:8001/api/accounts/") as client:
+        async with AsyncClient(base_url=f'{settings.ACCOUNTS_API_BASE_URL}') as client:
             try:
                 response = await client.get(f'/{user_id}/financials', headers=headers)
 
@@ -67,7 +68,7 @@ class AccountsIntegration:
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url = "http://127.0.0.1:8001/api/accounts/addresses/") as client:
+        async with AsyncClient(base_url = f'{settings.ACCOUNTS_API_BASE_URL}/addresses/') as client:
             try:
                 response = await client.get(f'/{address_id}/', headers=headers)
 
