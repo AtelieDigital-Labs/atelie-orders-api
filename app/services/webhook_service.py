@@ -3,7 +3,6 @@ from sqlalchemy.future import select
 from app.models.order import OrderStatus
 from app.integrations.payment_integration import PaymentIntegration
 from app.integrations.catalog_integration import CatalogIntegration
-from app.integrations.accounts_integration import AccountsIntegration
 from app.repositories.order_repository import OrderRepository
 from app.core.config import settings
 import hmac
@@ -17,8 +16,19 @@ class WebhookService:
 
     MP_WEBHOOK_SECRET=settings.WEBHOOK_SECRET
 
-    @staticmethod
-    async def process_mercadopago_webhook(request: Request, session: AsyncSession):
+    def __init__(
+        self, 
+        session: AsyncSession, 
+        order_repository: OrderRepository, 
+        payment_integration: PaymentIntegration,
+        catalog_integration: CatalogIntegration,
+    ):
+        self.session = session
+        self.order_repo = order_repository
+        self.payment_inte = payment_integration
+        self.catalog_inte = catalog_integration
+
+    async def process_mercadopago_webhook(self, request: Request):
         # Validação de segurança
         x_signature = request.headers.get("x-signature")
         x_request_id = request.headers.get("x-request-id")
@@ -71,7 +81,7 @@ class WebhookService:
         if not action.startswith("order."):
             return {"status": "ignorado", "reason": f"Tópico {action} não é de order"}
         
-        order_info = await PaymentIntegration.get_merchant_order(data_id_url)
+        order_info = await self.payment_inte.get_merchant_order(data_id_url)
 
         if not order_info:
             return {"status": "error", "reason": "Ordem não encontrada no Mercado Pago"}
@@ -82,7 +92,7 @@ class WebhookService:
 
         if status in ["processed", "paid", "closed"] and group_id_str:
             
-            orders = await OrderRepository.get_order_group(session=session, group_id=group_id_str)
+            orders = await self.order_repo.get_order_group(group_id=group_id_str)
             
             if not orders:
                 return {"status": "error", "reason": "Nenhum pedido local correspondente"}
@@ -95,7 +105,7 @@ class WebhookService:
             for order in orders:
                 order.status = OrderStatus.PAID
                 order.transaction_id = str(data_id_url) 
-                artisan_id = await CatalogIntegration.get_store_owner(order.store_id)
+                artisan_id = await self.catalog_inte.get_store_owner(order.store_id)
 
                 event_items = [
                     OrderItemEvent(
@@ -115,7 +125,7 @@ class WebhookService:
 
                 events_to_publish.append(event)
 
-            await session.commit()
+            await self.session.commit()
 
             for event in events_to_publish:
                 publisher_order_paid(event)

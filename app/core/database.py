@@ -7,7 +7,6 @@ from sqlalchemy.sql import func
 
 from app.core.config import settings
 
-# Quando mudar para PostgreSQL, o connect_args pode ser removido.
 engine = create_async_engine(
     settings.DATABASE_URL
 )

@@ -12,17 +12,28 @@ from app.repositories.shipping_repository import ShippingRepository
 
 
 class ShippingService:
-    @staticmethod
-    async def calculate_cart_shipping(redis: Redis, user_id: str, destination_zip: str):
+    def __init__(
+        self, 
+        shipping_repository: ShippingRepository, 
+        cart_service: CartService, 
+        catalog_integration: CatalogIntegration,
+        shipping_integration: ShippingIntegration
+    ):
+        self.shipping_repo = shipping_repository
+        self.cart_service = cart_service
+        self.catalog_inte = catalog_integration
+        self.shipping_inte = shipping_integration
+
+    async def calculate_cart_shipping(self, user_id: str, destination_zip: str):
         # 1. Pega os itens do carrinho
-        cart_data = await CartService.get_items(redis, user_id)
+        cart_data = await self.cart_service.get_items(user_id)
 
         if not cart_data['items']:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Carrinho vazio.")
 
         # 2. Busca dimensões no Catalog
         products_ids = [item["product_variant_id"] for item in cart_data["items"]]
-        catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
+        catalog_data = await self.catalog_inte.fetch_all_prices(products_ids)
 
         # 3. Agrupa os produtos por Loja e monta o formato que o Melhor Envio exige
         stores_payloads = {}
@@ -53,13 +64,13 @@ class ShippingService:
         
         for store_id in stores_ids_list:
             # Busca o CEP da loja no microsserviço Catalog
-            store_zip = await CatalogIntegration.get_store_zip(store_id) 
+            store_zip = await self.catalog_inte.get_store_zip(store_id) 
             
             payload_produtos = stores_payloads[store_id]
             
             # Prepara a "tarefa" assíncrona, mas não executa ainda
             tasks.append(
-                ShippingIntegration.calculate_store_freight(store_zip, destination_zip, payload_produtos)
+                self.shipping_inte.calculate_store_freight(store_zip, destination_zip, payload_produtos)
             )
         
         # Executa todas as requisições às lojas AO MESMO TEMPO
@@ -131,6 +142,6 @@ class ShippingService:
             )
         )
 
-        await ShippingRepository.save_freight(redis=redis, user_id=user_id, quote_json=response.model_dump_json())
+        await self.shipping_repo.save_freight(user_id=user_id, quote_json=response.model_dump_json())
 
         return response

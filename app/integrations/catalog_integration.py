@@ -5,11 +5,13 @@ from http import HTTPStatus
 from app.core.config import settings
  
 class CatalogIntegration:
-    @staticmethod
-    async def get_store_owner(store_id: str):
-        base_url = f'{settings.CATALOG_API_BASE_URL}/stores'
+    def __init__(self, base_url: str = settings.CATALOG_API_BASE_URL):
+        self.base_url = base_url
 
-        async with AsyncClient(base_url=base_url) as client:
+    async def get_store_owner(self, store_id: str):
+        url = f'{self.base_url}/stores'
+
+        async with AsyncClient(base_url=url) as client:
             try:
                 response = await client.get(f'/{store_id}/artisan')
 
@@ -32,8 +34,7 @@ class CatalogIntegration:
                 print(f'Erro ao conectar com o Catalog na busca do dono da loja: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
             
-    @staticmethod
-    async def get_data_for_product(client: AsyncClient, product_variant_id: str):
+    async def get_data_for_product(self, client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
 
         response.raise_for_status()
@@ -48,11 +49,12 @@ class CatalogIntegration:
         return (product_variant_id, {'store_id': store_id, 'unit_price': unit_price, 'stock': stock})
 
     
-    @staticmethod
-    async def fetch_all_products(products_variants: list[str]):
-        async with AsyncClient(base_url=f'{settings.CATALOG_API_BASE_URL}/products/variations') as client:
+    async def fetch_all_products(self, products_variants: list[str]):
+        url = f'{self.base_url}/products/variations'
+
+        async with AsyncClient(base_url=url) as client:
             
-            tasks = [CatalogIntegration.get_data_for_product(client, variant_id) for variant_id in products_variants]
+            tasks = [self.get_data_for_product(client, variant_id) for variant_id in products_variants]
             results = await gather(*tasks, return_exceptions=True)
 
             valid_data = {}
@@ -66,10 +68,9 @@ class CatalogIntegration:
 
             return valid_data
 
-    @staticmethod
-    async def get_store_id(token: str):
+    async def get_store_id(self, token: str):
        
-        base_url = f'{settings.CATALOG_API_BASE_URL}/stores/me'
+        url = f'{self.base_url}/stores/me'
 
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -77,7 +78,7 @@ class CatalogIntegration:
 
         async with AsyncClient() as client:
             try:
-                response = await client.get(url=base_url,headers=headers)
+                response = await client.get(url=url,headers=headers)
 
                 if response.status_code == 404:
                     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Loja não encontrada')
@@ -95,11 +96,10 @@ class CatalogIntegration:
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
             
 
-    @staticmethod
-    async def get_store_zip(store_id: str):
-        base_url = f'{settings.CATALOG_API_BASE_URL}/stores'
+    async def get_store_zip(self, store_id: str):
+        url = f'{self.base_url}/stores'
         
-        async with AsyncClient(base_url=base_url) as client:
+        async with AsyncClient(base_url=url) as client:
             try:
                 response = await client.get(f'/{store_id}')
                 
@@ -128,8 +128,7 @@ class CatalogIntegration:
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
 
 
-    @staticmethod
-    async def search_price(client: AsyncClient, product_variant_id: str):
+    async def search_price(self, client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
 
         response.raise_for_status()
@@ -145,11 +144,12 @@ class CatalogIntegration:
 
         return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
-    @staticmethod
-    async def fetch_all_prices(products_variants: list[str]):
-        async with AsyncClient(base_url=f'{settings.CATALOG_API_BASE_URL}/products/variations') as client:
+    async def fetch_all_prices(self, products_variants: list[str]):
+        url = f'{self.base_url}/products/variations'
+        
+        async with AsyncClient(base_url=url) as client:
             try:
-                tasks = [CatalogIntegration.search_price(client, variant_id) for variant_id in products_variants]
+                tasks = [self.search_price(client, variant_id) for variant_id in products_variants]
 
                 results = await gather(*tasks)
 
@@ -161,7 +161,7 @@ class CatalogIntegration:
     
     # Método para ir posterior por RabbitMQ
     @staticmethod
-    async def deacrese_stock(paylod: list[dict]):
+    async def decrease_stock(paylod: list[dict]):
         url = f'{settings.CATALOG_API_BASE_URL}/stock/decrease'
 
         async with AsyncClient() as client:
