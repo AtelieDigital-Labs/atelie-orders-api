@@ -6,7 +6,7 @@ from app.core.redis import get_redis
 
 from app.services.shipping_service import ShippingService
 from app.schemas.shipping import CartShippingResponse
-from app.api.dependencies import verify_user
+from app.api.dependencies.autenticator import verify_user
 from app.validators.validate import validate_address_user
 from app.api.dependencies.shipping import get_shipping_service
 from app.api.dependencies.integration import get_accounts_integration

@@ -5,7 +5,7 @@ from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderR
 from fastapi import APIRouter, Depends, Request, HTTPException
 from app.services.order_service import OrderService
 from app.api.dependencies.order import get_order_service
-from app.api.dependencies import verify_user
+from app.api.dependencies.autenticator import verify_user
 
 
 router = APIRouter(prefix='/api/v1/orders', tags=['Users order'])

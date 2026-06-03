@@ -11,6 +11,7 @@ from app.api.dependencies.integration import get_catalog_integration, get_accoun
 from app.integrations.catalog_integration import CatalogIntegration
 from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.payment_integration import PaymentIntegration
+from app.services.order_service import OrderService
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

@@ -8,6 +8,7 @@ from app.core.redis import get_redis
 from app.api.dependencies.integration import get_catalog_integration, get_shipping_integration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.integrations.shipping_integration import ShippingIntegration
+from app.services.cart_service import CartService
 
 
 RedisDep = Annotated[Redis, Depends(get_redis)]
