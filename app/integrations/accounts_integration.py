@@ -5,11 +5,11 @@ from http import HTTPStatus
 from app.core.config import settings
 
 class AccountsIntegration:
-    @staticmethod
-    # passar o token no headers 
-    async def get_data_user(token: str):
+    def __init__(self, base_url: str = settings.ACCOUNTS_API_BASE_URL):
+        self.base_url = base_url
 
-        base_url = f'{settings.ACCOUNTS_API_BASE_URL}/me/'
+    async def get_data_user(self, token: str):
+        url = f'{self.base_url}/me/'
         
         headers = {
             "Authorization": f"Bearer {token}"  
@@ -17,7 +17,7 @@ class AccountsIntegration:
 
         async with AsyncClient() as client:
             try:
-                response = await client.get(url=base_url, headers=headers)
+                response = await client.get(url=url, headers=headers)
 
                 response.raise_for_status()
 
@@ -35,13 +35,14 @@ class AccountsIntegration:
                 print(f'Erro ao conectar com o Accounts: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de autenticação indisponível')
 
-    @staticmethod
-    async def get_financials(user_id: str, token: str):
+    async def get_financials(self, user_id: str, token: str):
+        url = f'{self.base_url}'
+        
         headers = {
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url=f'{settings.ACCOUNTS_API_BASE_URL}') as client:
+        async with AsyncClient(base_url=url) as client:
             try:
                 response = await client.get(f'/{user_id}/financials', headers=headers)
 
@@ -61,14 +62,14 @@ class AccountsIntegration:
                 print(f'Erro ao conectar com o Accounts: {exc}')
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de autenticação indisponível')
             
-    @staticmethod
-    async def get_address(address_id: str, token: str):
-        
+    async def get_address(self, address_id: str, token: str):
+        url = f'{self.base_url}/addresses'
+
         headers = {
             "Authorization": f"Bearer {token}"  
         }
 
-        async with AsyncClient(base_url = f'{settings.ACCOUNTS_API_BASE_URL}/addresses/') as client:
+        async with AsyncClient(base_url = url) as client:
             try:
                 response = await client.get(f'/{address_id}/', headers=headers)
 

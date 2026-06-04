@@ -1,5 +1,4 @@
 from app.repositories.cart_repository import CartRepository
-from redis.asyncio import Redis
 from app.schemas.cart import CartItemCreate, CartItemUpdate
 from app.integrations.catalog_integration import CatalogIntegration
 from fastapi import HTTPException
@@ -8,15 +7,18 @@ from http import HTTPStatus
 
 
 class CartService:
-    @staticmethod
-    async def add_item(redis: Redis, item: CartItemCreate, user_id: str):        
-        data = await CatalogIntegration.fetch_all_products([item.product_variant_id])
+    def __init__(self, cart_repository: CartRepository, catalog_integration: CatalogIntegration):
+        self.cart_repo = cart_repository
+        self.catalog_inte = catalog_integration
+
+    async def add_item(self, item: CartItemCreate, user_id: str):        
+        data = await self.catalog_inte.fetch_all_products([item.product_variant_id])
 
         product_data = data.get(item.product_variant_id, {})
 
         available_stock = product_data.get("stock", 0) 
 
-        current_quantity = await CartRepository.get_item_quantity(redis, user_id, item.product_variant_id)
+        current_quantity = await self.cart_repo.get_item_quantity(user_id, item.product_variant_id)
 
         if (current_quantity + item.quantity) > available_stock:
             raise HTTPException(
@@ -24,7 +26,7 @@ class CartService:
                 detail=f"Estoque insuficiente. Temos apenas {available_stock} unidades disponíveis."
             )
 
-        final_quantity = await CartRepository.increment_item(redis, user_id, item.product_variant_id, item.quantity)
+        final_quantity = await self.cart_repo.increment_item(user_id, item.product_variant_id, item.quantity)
 
 
         store_id = product_data.get("store_id", "default")
@@ -37,22 +39,21 @@ class CartService:
             "unit_price": unit_price
         }
 
-    @staticmethod
-    async def update_item_quantity(redis: Redis, variant_id: str, update_data: CartItemUpdate, user_id: str):
-        exists = await CartRepository.item_exists(redis, user_id, variant_id)
+    async def update_item_quantity(self, variant_id: str, update_data: CartItemUpdate, user_id: str):
+        exists = await self.cart_repo.item_exists(user_id, variant_id)
 
         if not exists:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=f"O produto {variant_id} não foi encontrado no carrinho.")
 
         if update_data.quantity == 0:
-            await CartRepository.remove_item(redis, user_id, variant_id)
+            await self.cart_repo.remove_item(user_id, variant_id)
             return {
                 "product_variant_id": variant_id,
                 "message": "Item removido do carrinho com sucesso.",
                 "quantity": 0
             }
         
-        data = await CatalogIntegration.fetch_all_products([variant_id])
+        data = await self.catalog_inte.fetch_all_products([variant_id])
         available_stock = data.get(variant_id, {}).get("stock", 0)
 
         if update_data.quantity > available_stock:
@@ -61,7 +62,7 @@ class CartService:
                 detail=f"Estoque insuficiente. Temos apenas {available_stock} unidades disponíveis."
             )
 
-        await CartRepository.set_item_quantity(redis, user_id, variant_id, update_data.quantity)
+        await self.cart_repo.set_item_quantity(user_id, variant_id, update_data.quantity)
 
         return {
             "product_variant_id": variant_id,
@@ -69,9 +70,8 @@ class CartService:
             "quantity": update_data.quantity
         }
 
-    @staticmethod
-    async def get_items(redis: Redis, user_id: str):
-        cart_items = await CartRepository.get_all_items(redis, user_id)
+    async def get_items(self, user_id: str):
+        cart_items = await self.cart_repo.get_all_items(user_id)
 
         if not cart_items:
             return{
@@ -82,7 +82,7 @@ class CartService:
         
         variant_ids = list(cart_items.keys())
         
-        catalog_info = await CatalogIntegration.fetch_all_products(variant_ids)
+        catalog_info = await self.catalog_inte.fetch_all_products(variant_ids)
 
         items_list = []
         total_quantity = 0
@@ -107,17 +107,15 @@ class CartService:
             "total_price": round(total_price, 2)
         }
 
-    @staticmethod
-    async def clear_cart_item(redis: Redis, item_id: str, user_id: str):
-        await CartRepository.remove_item(redis, user_id, item_id)
+    async def clear_cart_item(self, item_id: str, user_id: str):
+        await self.cart_repo.remove_item(user_id, item_id)
 
         return{
             "message": "Produto removido do carrinho com sucesso!"
         }
 
-    @staticmethod
-    async def clear_cart(redis: Redis, user_id: str):
-        await CartRepository.clear_cart(redis, user_id)
+    async def clear_cart(self, user_id: str):
+        await self.cart_repo.clear_cart(user_id)
 
         return{
             "message": "Carrinho removido com sucesso!"

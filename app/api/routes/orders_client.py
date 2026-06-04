@@ -1,51 +1,54 @@
 from http import HTTPStatus
-from typing import Annotated
 
 from fastapi_pagination import Page
 from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead, OrderResponse
 from fastapi import APIRouter, Depends, Request, HTTPException
 from app.services.order_service import OrderService
-from sqlalchemy.ext.asyncio import AsyncSession
-from redis.asyncio import Redis
+from app.api.dependencies.order import get_order_service
+from app.api.dependencies.autenticator import verify_user
 
-from app.api.dependencies import verify_user
-from app.core.database import get_session
-from app.core.redis import get_redis
 
 router = APIRouter(prefix='/api/v1/orders', tags=['Users order'])
 
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
-RedisDep = Annotated[Redis, Depends(get_redis)]
-
- 
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
-async def list_all_orders(session: SessionDep, user_auth: dict = Depends(verify_user)):
+async def list_all_orders(
+    user_auth: dict = Depends(verify_user),
+    service: OrderService = Depends(get_order_service)
+):
     """
     Lista todos os pedidos do cliente
     """
 
     user_id = user_auth["user_id"]
 
-    return await OrderService.get_all_orders(session, user_id)
+    return await service.get_all_orders(user_id=user_id)
 
 
 @router.get('/{order_id}', status_code=HTTPStatus.OK, response_model= OrderRead)
-async def list_order(session: SessionDep, order_id: int,  user_auth: dict = Depends(verify_user)):
+async def list_order(
+    order_id: int,  
+    user_auth: dict = Depends(verify_user),
+    service: OrderService = Depends(get_order_service)
+):
    """
     Lista os detalhes de um pedido
    """
    user_id = user_auth["user_id"]
    
-   return await OrderService.get_order_by_id(session, order_id, user_id)
+   return await service.get_order_by_id(order_id=order_id, user_id=user_id)
 
 
 @router.post('/', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
-async def create_order(order_data:OrderCheckoutRequest, session: SessionDep, redis: RedisDep,user_auth: dict = Depends(verify_user)):
+async def create_order(
+    order_data:OrderCheckoutRequest, 
+    user_auth: dict = Depends(verify_user),
+    service: OrderService = Depends(get_order_service)
+):
     """
     Criar um pedido
     """
     user_id = user_auth["user_id"]
     token = user_auth["token"]
 
-    return await OrderService.create_new_order(order_data, session, redis, user_id, token)  
+    return await service.create_new_order(order_data=order_data, user_id=user_id, token=token)  

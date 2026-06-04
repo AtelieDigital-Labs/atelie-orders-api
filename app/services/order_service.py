@@ -2,14 +2,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.order import OrderItem, OrderStatus
 from app.repositories.order_repository import OrderRepository
 from app.services.cart_service import CartService
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
 from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
 import uuid
-from redis.asyncio import Redis
 from decimal import Decimal
 from app.integrations.payment_integration import PaymentIntegration
 from app.repositories.shipping_repository import ShippingRepository
@@ -25,11 +24,28 @@ VALID_TRANSITIONS = {
 
 
 class OrderService: 
-    @staticmethod
-    async def update_status_order(session: AsyncSession, order_id: int, token: str, update_status: OrderArtisanStatusUpdate):
-        store_id = await CatalogIntegration.get_store_id(token)
+    def __init__(
+        self, 
+        session: AsyncSession, 
+        order_repository: OrderRepository, 
+        shipping_repository: ShippingRepository,
+        cart_service: CartService,
+        catalog_integration: CatalogIntegration, 
+        accounts_integration: AccountsIntegration,
+        payment_integration: PaymentIntegration
+    ):
+        self.session = session
+        self.order_repo = order_repository
+        self.shipping_repo = shipping_repository
+        self.cart_service = cart_service
+        self.catalog_inte = catalog_integration
+        self.accounts_inte = accounts_integration
+        self.payment_inte = payment_integration
 
-        order = await OrderRepository.get_order_artisan(session, order_id, str(store_id))
+    async def update_status_order(self, order_id: int, token: str, update_status: OrderArtisanStatusUpdate):
+        store_id = await self.catalog_inte.get_store_id(token)
+
+        order = await self.order_repo.get_order_artisan(order_id, str(store_id))
 
         if not order:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='Pedido não encontrado ou não pertence a este artesão')
@@ -44,56 +60,54 @@ class OrderService:
         if status == OrderStatus.SHIPPED and update_status.tracking_code:
             order.tracking_code = update_status.tracking_code
         
-        order_updated = await OrderRepository.update_status_order(session, order)
+        order_updated = await self.order_repo.update_status_order(order)
 
         return order_updated
         
 
-    @staticmethod
-    async def get_order_artisan_by_id(session: AsyncSession, order_id: int, token: str):
-        store_id = await CatalogIntegration.get_store_id(token)
+    async def get_order_artisan_by_id(self, order_id: int, token: str):
+        store_id = await self.catalog_inte.get_store_id(token)
 
-        order = await OrderRepository.get_order_artisan(session, order_id, str(store_id))
+        order = await self.order_repo.get_order_artisan(order_id, str(store_id))
 
         if not order:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Pedido não encontrado ou não pertence a este artesão")
         
         return order
 
-    @staticmethod
-    async def get_all_orders_artisan(session: AsyncSession, token: str):
-        store_id = await CatalogIntegration.get_store_id(token)
+    async def get_all_orders_artisan(self, token: str):
+        store_id = await self.catalog_inte.get_store_id(token)
 
-        return await OrderRepository.get_all_orders_artisan(session, str(store_id))
+        return await self.order_repo.get_all_orders_artisan(str(store_id))
 
 
-    @staticmethod
-    async def get_order_by_id(session: AsyncSession, order_id: int, user_id: str):
-        order = await OrderRepository.get_order(session, order_id, user_id)
+    async def get_order_by_id(self, order_id: int, user_id: str):
+        order = await self.order_repo.get_order(order_id, user_id)
 
         if not order:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Pedido não encontrado ou não pertence a este usuário")
 
         return order
     
-    @staticmethod
-    async def get_all_orders(session: AsyncSession, user_id: str):
-        return await OrderRepository.get_all_orders(session, user_id)
+    async def get_all_orders(self, user_id: str):
+        return await self.order_repo.get_all_orders(user_id)
 
 
-    @staticmethod
-    async def create_new_order(order_data: OrderCheckoutRequest, session: AsyncSession, redis: Redis, user_id: str, token: str):
+    async def create_new_order(self, order_data: OrderCheckoutRequest, user_id: str, token: str):
         try:
             
             group_id = uuid.uuid4()
             total_cart_amount = Decimal("0.00")
             fee_percentage = Decimal("0.05")
 
-            client_data = await AccountsIntegration.get_data_user(token=token)
+            client_data = await self.accounts_inte.get_data_user(token=token)
 
-            address_data = await AccountsIntegration.get_address(address_id=order_data.address_id, token=token)
+            address_data = await self.accounts_inte.get_address(address_id=order_data.address_id, token=token)
 
-            validate_address_user(address_data, user_id)
+            validate_address_user(
+                address_data=address_data, 
+                user_id=user_id
+            )
 
             address_snapshot = {
                 "street" : address_data.get('street'),
@@ -105,7 +119,7 @@ class OrderService:
                 'zip_code': address_data.get('zip_code')
             } 
 
-            saved_quotes = await ShippingRepository.get_freight(redis=redis, user_id=user_id)
+            saved_quotes = await self.shipping_repo.get_freight(user_id=user_id)
 
             if not saved_quotes:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Cotação de frete expirada ou não encontrada. Retorne a página anterior e selecione o frete novamente.")
@@ -118,7 +132,7 @@ class OrderService:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Método de frete inválido.")
 
 
-            cart_data = await CartService.get_items(redis=redis, user_id=user_id)
+            cart_data = await self.cart_service.get_items(user_id=user_id)
 
             if not cart_data["items"]:
                 raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail='Não existem items no carrinho do usuário para prosseguir com a compra.')
@@ -126,7 +140,7 @@ class OrderService:
             
             products_ids = [item["product_variant_id"] for item in cart_data["items"]]
 
-            catalog_data = await CatalogIntegration.fetch_all_prices(products_ids)
+            catalog_data = await self.catalog_inte.fetch_all_prices(products_ids)
 
             items_store = {}
             for item in cart_data["items"]:
@@ -182,8 +196,7 @@ class OrderService:
                     "artisan_ammount": artisan_ammount
                 }
                 
-                new_order = await OrderRepository.create_order(
-                    session=session,
+                new_order = await self.order_repo.create_order(
                     order_data=order_payload
                 )
 
@@ -202,22 +215,22 @@ class OrderService:
                         )
                     )
 
-                await OrderRepository.create_order_items(session=session, items_data=order_items_create)
+                await self.order_repo.create_order_items(items_data=order_items_create)
             
-            await session.commit()
+            await self.session.commit()
 
             try: 
-                await ShippingRepository.delete_freight(redis=redis, user_id=user_id)
-                await CartService.clear_cart(redis=redis, user_id=user_id)
+                await self.shipping_repo.delete_freight(user_id=user_id)
+                await self.cart_service.clear_cart(user_id=user_id)
 
             except Exception as e:
                 print(f"Falha ao limpar carrinho do usuário. Erro {e}")
 
         except HTTPException:
-            await session.rollback()
+            await self.session.rollback()
             raise
         except Exception as e:
-            await session.rollback()
+            await self.session.rollback()
             print(f"ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
@@ -234,7 +247,7 @@ class OrderService:
                 "buyer_last_name": client_data['last_name'],
             }
 
-            mp_response = await PaymentIntegration.generate_payment(payload=payment_payload)
+            mp_response = await self.payment_inte.generate_payment(payload=payment_payload)
 
             if not mp_response:
                 raise Exception("Falha ao gerar pagamento na api de pagamento")

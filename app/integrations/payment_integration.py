@@ -4,12 +4,15 @@ from app.core.config import settings
 
 
 class PaymentIntegration:
-    @staticmethod
-    async def generate_payment(payload: dict):
-        url = 'https://api.mercadopago.com/v1/orders'
+    def __init__(self, token: str, base_url: str = 'https://api.mercadopago.com/v1'):
+        self.token = token
+        self.base_url = base_url
+
+    async def generate_payment(self, payload: dict):
+        url = f'{self.base_url}/orders'
 
         headers = {
-            "Authorization": f"Bearer {settings.MERCADO_PAGO_TOKEN}",
+            "Authorization": f"Bearer {self.token}",
             "X-Idempotency-Key": str(uuid.uuid4()), 
             "Content-Type": "application/json" 
         }
@@ -42,7 +45,7 @@ class PaymentIntegration:
 
         async with AsyncClient() as client:
             try:
-                response = await client.post(url, json=payment_data, headers=headers)
+                response = await client.post(url=url, json=payment_data, headers=headers)
                 response.raise_for_status()
                 
                 return response.json()
@@ -52,18 +55,17 @@ class PaymentIntegration:
                 
                 return {}
 
-    @staticmethod
-    async def get_merchant_order(order_id: str):
-        url = f"https://api.mercadopago.com/v1/orders/{order_id}"
+    async def get_merchant_order(self, order_id: str):
+        url = f'{self.base_url}/orders/{order_id}'
 
         headers = {
-            "Authorization": f"Bearer {settings.MERCADO_PAGO_TOKEN}",
+            "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json" 
         }
 
         async with AsyncClient() as client:
             try:
-                response = await client.get(url, headers=headers)
+                response = await client.get(url=url, headers=headers)
                 response.raise_for_status()
                 return response.json()
             
