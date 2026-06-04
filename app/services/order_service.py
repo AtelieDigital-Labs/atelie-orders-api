@@ -9,7 +9,6 @@ from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
 import uuid
-from redis.asyncio import Redis
 from decimal import Decimal
 from app.integrations.payment_integration import PaymentIntegration
 from app.repositories.shipping_repository import ShippingRepository
@@ -94,7 +93,7 @@ class OrderService:
         return await self.order_repo.get_all_orders(user_id)
 
 
-    async def create_new_order(self, order_data: OrderCheckoutRequest, redis: Redis, user_id: str, token: str):
+    async def create_new_order(self, order_data: OrderCheckoutRequest, user_id: str, token: str):
         try:
             
             group_id = uuid.uuid4()
@@ -105,7 +104,10 @@ class OrderService:
 
             address_data = await self.accounts_inte.get_address(address_id=order_data.address_id, token=token)
 
-            validate_address_user(address_data, user_id)
+            validate_address_user(
+                address_data=address_data, 
+                user_id=user_id
+            )
 
             address_snapshot = {
                 "street" : address_data.get('street'),
@@ -215,7 +217,7 @@ class OrderService:
 
                 await self.order_repo.create_order_items(items_data=order_items_create)
             
-            await session.commit()
+            await self.session.commit()
 
             try: 
                 await self.shipping_repo.delete_freight(user_id=user_id)
@@ -225,10 +227,10 @@ class OrderService:
                 print(f"Falha ao limpar carrinho do usuário. Erro {e}")
 
         except HTTPException:
-            await session.rollback()
+            await self.session.rollback()
             raise
         except Exception as e:
-            await session.rollback()
+            await self.session.rollback()
             print(f"ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 

@@ -33,7 +33,7 @@ async def list_order(
    """
    token = user_auth["token"]
 
-   return await service.get_order_artisan_by_id(order=order_id, token=token)
+   return await service.get_order_artisan_by_id(order_id=order_id, token=token)
 
 @router.patch('/{oder_id}/status', status_code=HTTPStatus.OK, response_model=OrderArtisanRead)
 async def update_status(
@@ -48,4 +48,4 @@ async def update_status(
 
     token = user_auth["token"]
     
-    return await service.update_status_order(order=order_id, token=token, update_status=update_status)
+    return await service.update_status_order(order_id=order_id, token=token, update_status=update_status)
