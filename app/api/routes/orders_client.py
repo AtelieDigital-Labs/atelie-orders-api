@@ -1,8 +1,8 @@
 from http import HTTPStatus
 
 from fastapi_pagination import Page
-from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead, OrderResponse
-from fastapi import APIRouter, Depends, Request, HTTPException
+from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead, OrderResponse, OrderPaymentRequest
+from fastapi import APIRouter, Depends
 from app.services.order_service import OrderService
 from app.api.dependencies.order import get_order_service
 from app.api.dependencies.autenticator import verify_user
@@ -52,3 +52,16 @@ async def create_order(
     token = user_auth["token"]
 
     return await service.create_new_order(order_data=order_data, user_id=user_id, token=token)  
+
+@router.post('/payments/retry', status_code=HTTPStatus.CREATED, response_model=OrderCreatedResponse)
+async def paid_order(
+    order_data: OrderPaymentRequest,
+    user_auth: dict = Depends(verify_user),
+    service: OrderService = Depends(get_order_service)
+):
+    """
+    Pagar pedido pendente
+    """
+    token = user_auth["token"]
+
+    return await service.paid_order_pending(order_data=order_data, token=token)

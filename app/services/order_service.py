@@ -5,7 +5,7 @@ from app.services.cart_service import CartService
 from fastapi import HTTPException
 from app.integrations.accounts_integration import AccountsIntegration
 from app.integrations.catalog_integration import CatalogIntegration
-from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate
+from app.schemas.order import OrderCheckoutRequest, OrderArtisanStatusUpdate, OrderPaymentRequest
 from app.validators.validate import validate_address_user
 from http import HTTPStatus
 import uuid
@@ -264,12 +264,68 @@ class OrderService:
             print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
-                detail="Pedido criado! Porém, ocorreu um erro ao gerar o pagamento. Acesses Meus Pedidos para tentar pagar novamente."
+                detail="Pedido criado! Porém, ocorreu um erro ao gerar o pagamento. Acesse Meus Pedidos para tentar pagar novamente."
             )
 
         return {
             'message':'Pedido gerado', 
             'checkout_group_id':str(group_id),
+            'payment_info': {
+                'id': mercadopago_id,
+                'qr_code_base64': pix,
+                'qr_code': pix_copia_cola
+            }
+        }
+    
+    async def paid_order_pending(self, order_data: OrderPaymentRequest, token: str):
+        orders = []
+        group_id = str(order_data.checkout_group_id)
+
+        client_data = await self.accounts_inte.get_data_user(token=token)
+        
+        orders = await self.order_repo.get_order_group_pending(group_id)
+
+        if not orders:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Pedido não encontrado"
+            )
+        
+        total_ammount = sum(order.price + order.shipping_cost for order in orders)
+        
+        try:
+            payment_payload = {
+                "total_amount": str(float(total_ammount)),
+                "payment_method": "pix",
+                "checkout_group_id": group_id,
+                "buyer_email": client_data['email'],
+                "buyer_first_name": client_data['first_name'],
+                "buyer_last_name": client_data['last_name'],
+            }
+
+            mp_response = await self.payment_inte.generate_payment(payload=payment_payload)
+
+            if not mp_response:
+                raise Exception("Falha ao gerar pagamento na api de pagamento")
+            
+            try:
+                mercadopago_id = mp_response['id']
+                payment_data = mp_response['transactions']['payments'][0]['payment_method']
+                pix = payment_data['qr_code_base64']
+                pix_copia_cola = payment_data['qr_code']
+            except (KeyError, IndexError) as e:
+                raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
+
+        except Exception as e:
+            print(f"🚨 ERRO REAL CAPTURADO: {e}")
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_GATEWAY, 
+                detail="Ocorreu um erro ao gerar o pagamento. Tentar pagar novamente mais tarde."
+            )
+
+        return {
+            'message':'Pagamento gerado', 
+            'checkout_group_id': group_id,
             'payment_info': {
                 'id': mercadopago_id,
                 'qr_code_base64': pix,

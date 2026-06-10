@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+import uuid
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Dict, Optional, Union
@@ -60,6 +61,10 @@ class OrderResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class OrderPaymentRequest(BaseModel):
+    checkout_group_id: uuid.UUID
+
 
 # 
 #   ARTISAN
