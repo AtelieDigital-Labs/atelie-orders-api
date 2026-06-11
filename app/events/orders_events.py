@@ -13,7 +13,7 @@ def generate_log_create_order(mapper: Mapper, connection: Connection, target: Or
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "microservice": "Orders",
         "actor": {
-            "user_id": "uuid_do_usuario_ou_artesao", # fazer processo do contextvars para pegar o id do usuário
+            "user_id": target.user_id,
             "role": "customer",
         },
         "action": "INSERT",
