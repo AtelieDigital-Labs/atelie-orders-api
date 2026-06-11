@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.services.webhook_service import WebhookService
 from typing import Annotated
-from app.api.dependencies.webhook import get_webhook_service
+from app.api.dependencies.webhook import get_webhook_service, SessionDep
 
 router = APIRouter(prefix="/api/v1/orders/webhook", tags=["Webhooks"])
 
@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api/v1/orders/webhook", tags=["Webhooks"])
 @router.post("/mercadopago")
 async def mercadopago_webhook(
     request: Request, 
+    session: AsyncSession = SessionDep,
     service: WebhookService = Depends(get_webhook_service)
 ):
     """

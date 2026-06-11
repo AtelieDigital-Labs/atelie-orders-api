@@ -1,7 +1,7 @@
 services:
   order_database:
     image: postgres
-    container_name: postgres_database
+    container_name: order_database
     restart: always
     volumes:
       - pgdata:/var/lib/postgresql/
@@ -19,7 +19,7 @@ services:
   
   cart_database:
     image: redis:alpine
-    container_name: redis_database
+    container_name: cart_database
     restart: always
     command: redis-server --requirepass AtelieV20
     volumes:
@@ -34,7 +34,7 @@ services:
 
   order_api:
     build: .
-    container_name: order_api
+    container_name: order_service
     image: atelie_order_api
     ports:
       - "8000:8000"
