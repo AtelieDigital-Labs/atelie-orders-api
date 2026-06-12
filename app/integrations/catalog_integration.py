@@ -35,7 +35,7 @@ class CatalogIntegration:
                 raise HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail='Serviço de catálogo indisponível no momento')
             
     async def get_data_for_product(self, client: AsyncClient, product_variant_id: str):
-        response = await client.get(f'/{product_variant_id}')
+        response = await client.get(f'{self.base_url}/products/variations/{product_variant_id}')
 
         response.raise_for_status()
 

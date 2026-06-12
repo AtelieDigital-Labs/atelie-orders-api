@@ -38,6 +38,9 @@ services:
     image: atelie_order_api
     ports:
       - "8000:8000"
+    networks:
+      - default
+      - atelie-network
     volumes:
       - .:/app
     depends_on:
@@ -54,3 +57,7 @@ services:
 volumes:
   pgdata:
   rdata:
+
+networks:
+  atelie-network:
+    external: true

@@ -8,7 +8,7 @@ from fastapi import FastAPI
 import asyncio
 import sys
 from fastapi_pagination import add_pagination
-from app.core.redis import lifespan
+from app.core.lifespan import lifespan
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

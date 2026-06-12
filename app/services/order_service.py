@@ -261,6 +261,8 @@ class OrderService:
                 raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
