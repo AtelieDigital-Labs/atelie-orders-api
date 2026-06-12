@@ -29,9 +29,10 @@ class PaymentIntegration:
                         "amount": payload.get("total_amount"),
                         "payment_method": {
                             "id": "pix",
-                            "type": "bank_transfer"
+                            "type": "bank_transfer",
+                            "statement_descriptor": "COMPRA NO ATELIÊ DIGITAL"
                         },
-                        "expiration_time": "P3Y6M4DT12H30M5S" # Nota sobre isso abaixo
+                        "expiration_time": "P3Y6M4DT12H30M5S" 
                     }
                 ]
             },
@@ -39,6 +40,17 @@ class PaymentIntegration:
                 "first_name": payload.get("buyer_first_name"),
                 "last_name": payload.get("buyer_last_name"),
                 "email": payload.get("buyer_email")
+            },
+            "items": [
+                {
+                    "title": item.get("title"),
+                    "quantity": item.get("quantity"),
+                    "unit_price": str(item.get("unit_price")),
+                }
+                for item in payload.get("items", [])
+            ],
+            "integration_data": {
+                "platform_id": "6268984155367478" # Verificar novamente, pois o mp não considerou
             }
         }
 
