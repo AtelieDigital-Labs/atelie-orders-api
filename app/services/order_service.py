@@ -165,6 +165,8 @@ class OrderService:
                 if store_id not in items_store:
                     items_store[store_id] = []
                 items_store[store_id].append(item)
+
+            payment_items = []
             
             for store_id, items_list in items_store.items():
                 products_price = Decimal("0.00")
@@ -176,12 +178,28 @@ class OrderService:
                     quantity = Decimal(str(item["quantity"]))
                     products_price += (unit_price * quantity)
 
+                    payment_items.append(
+                        {
+                            "title": catalog_data[variant_id].get('title'),
+                            "quantity": int(quantity),
+                            "unit_price": float(unit_price)
+                        }
+                    )
+
                 store_shipping_cost = Decimal(str(shipping_costs_per_store.get(store_id, 0.00)))
                 # Taxa do Ateliê Digital por pedido
                 store_fee = products_price * fee_percentage
                 # Valor do artesão 
                 artisan_ammount = Decimal(str((products_price - store_fee) + store_shipping_cost))
                 total_cart_amount += (products_price + store_shipping_cost)
+
+                payment_items.append(
+                    {
+                        "title": "Custo de envio",
+                        "quantity": 1,
+                        "unit_price": float(store_shipping_cost)
+                    }
+                )
                 
                 order_payload = {
                     "user_id": user_id,
@@ -245,6 +263,7 @@ class OrderService:
                 "buyer_email": client_data['email'],
                 "buyer_first_name": client_data['first_name'],
                 "buyer_last_name": client_data['last_name'],
+                "items": payment_items
             }
 
             mp_response = await self.payment_inte.generate_payment(payload=payment_payload)
@@ -311,8 +330,8 @@ class OrderService:
             try:
                 mercadopago_id = mp_response['id']
                 payment_data = mp_response['transactions']['payments'][0]['payment_method']
-                pix = payment_data['qr_code_base64']
                 pix_copia_cola = payment_data['qr_code']
+                pix = payment_data['qr_code_base64']
             except (KeyError, IndexError) as e:
                 raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
 

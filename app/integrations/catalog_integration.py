@@ -135,6 +135,8 @@ class CatalogIntegration:
 
         data = response.json()
         
+        # verificar se é isso mesmo
+        title = data.get('description', data.get('name', f'Produto {product_variant_id}'))
         unit_price = data.get('price')
         stock = data.get('stock')
         weight = data.get('weight')
@@ -142,7 +144,7 @@ class CatalogIntegration:
         width = data.get('width')
         length = data.get('length')
 
-        return (product_variant_id, {'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
+        return (product_variant_id, {'title': title,'unit_price': unit_price, 'stock': stock, 'weight':weight, 'height':height, 'width': width, 'length': length})
 
     async def fetch_all_prices(self, products_variants: list[str]):
         url = f'{self.base_url}/products/variations'
