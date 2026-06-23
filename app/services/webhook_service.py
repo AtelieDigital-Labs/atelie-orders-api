@@ -29,13 +29,20 @@ class WebhookService:
         self.catalog_inte = catalog_integration
 
     async def process_mercadopago_webhook(self, request: Request):
+
+        print(f"URL Bruta: {request.url}")
+        print(f"Header x-signature: {request.headers.get('x-signature')}")
+        print(f"Query Param id: {request.query_params.get('id')}")
+        print(f"Query Param data.id: {request.query_params.get('data.id')}")
+        print(f"Tamanho do Secret em memória: {len(WebhookService.MP_WEBHOOK_SECRET)}")
+        
         # Validação de segurança
         x_signature = request.headers.get("x-signature")
         x_request_id = request.headers.get("x-request-id")
         
-        data_id_url = request.query_params.get("data.id")
+        data_id_url = request.query_params.get("data.id") or request.query_params.get("id")
 
-        if not x_signature or not x_request_id or not data_id_url:
+        if not x_signature or not data_id_url:
             return {"status": "ignorado", "reason": "Headers ou Query Params ausentes"}
 
         parts = x_signature.split(",")
@@ -52,27 +59,35 @@ class WebhookService:
                 elif key == "v1":
                     hash_v1 = val
 
-        data_id_lower = data_id_url.lower()
-        manifest = f"id:{data_id_lower};request-id:{x_request_id};ts:{ts};"
+        if not ts or not hash_v1:
+            return {"status": "erro", "reason": "Assinatura x-signature malformada (ts ou v1 ausentes)"}
+    
+        data_id_lower = str(data_id_url)
+
+        manifest_parts = [f"id:{data_id_lower}"]
+
+        if x_request_id:
+            manifest_parts.append(f"request-id:{x_request_id}")
+        
+        manifest_parts.append(f"ts:{ts}")
+
+        manifest = ";".join(manifest_parts) + ";"
         
         hmac_obj = hmac.new(
-            WebhookService.MP_WEBHOOK_SECRET.encode(), 
-            msg=manifest.encode(), 
+            WebhookService.MP_WEBHOOK_SECRET.encode('utf-8'), 
+            msg=manifest.encode('utf-8'), 
             digestmod=hashlib.sha256
         )
 
         meu_hash = hmac_obj.hexdigest()
 
-        # print("\n--- DEBUG HMAC ---")
-        # print(f"Secret Lida da Memória: '{WebhookService.MP_WEBHOOK_SECRET}'")
-        # print(f"Manifest gerado: {manifest}")
-        # print(f"Hash do Mercado Pago (v1): {hash_v1}")
-        # print(f"Meu Hash Calculado: {meu_hash}")
-        # print("------------------\n")
-        
-        if meu_hash != hash_v1:
+        if not hmac.compare_digest(meu_hash, hash_v1):
+            print("\n--- DEBUG HMAC ---")
+            print(f"Manifest gerado: {manifest}")
+            print(f"Hash MP (v1): {hash_v1} | Meu Hash: {meu_hash}")
+            print("------------------\n")
             print("Tentativa de fraude detectada: Assinatura HMAC inválida.")
-            #return {"status": "erro", "reason": "Assinatura HMAC inválida"}
+            return {"status": "erro", "reason": "Assinatura HMAC inválida"}
         
         payload = await request.json()
         action = payload.get("action", "")
