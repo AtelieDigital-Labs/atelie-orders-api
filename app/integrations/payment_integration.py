@@ -14,6 +14,7 @@ class PaymentIntegration:
         headers = {
             "Authorization": f"Bearer {self.token}",
             "X-Idempotency-Key": str(uuid.uuid4()), 
+            # descobrir onde é "X-platform-id": "6268984155367478",
             "Content-Type": "application/json" 
         }
 
@@ -48,10 +49,7 @@ class PaymentIntegration:
                     "unit_price": str(item.get("unit_price")),
                 }
                 for item in payload.get("items", [])
-            ],
-            "integration_data": {
-                "platform_id": "6268984155367478" # Verificar novamente, pois o mp não considerou
-            }
+            ]
         }
 
 
