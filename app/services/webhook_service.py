@@ -34,6 +34,7 @@ class WebhookService:
         print(f"Header x-signature: {request.headers.get('x-signature')}")
         print(f"Query Param id: {request.query_params.get('id')}")
         print(f"Query Param data.id: {request.query_params.get('data.id')}")
+        print(f"x-request-id: {request.headers.get('x-request-id')}")
         print(f"Tamanho do Secret em memória: {len(WebhookService.MP_WEBHOOK_SECRET)}")
         
         # Validação de segurança
