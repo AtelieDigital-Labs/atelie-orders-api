@@ -4,6 +4,7 @@ from app.core.config import settings
 from fastapi import Depends, HTTPException, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import ExpiredSignatureError, JWTError, jwt
+from app.core.context import current_user_id
 
 security = HTTPBearer()
 
@@ -20,6 +21,9 @@ async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(securi
                 status_code=HTTPStatus.UNAUTHORIZED,
                 detail='Token inválido',
             )
+        
+        current_user_id.set(user_id)
+        
         return {
             "user_id": user_id, 
             "token": token
