@@ -1,7 +1,7 @@
-from ..constants import RoutingKey
-from ..broker import broker
-from ..events.order_created import OrderCreatedEvent
-from ..exchanges import exchange_orders
+from infra.messaging.constants import RoutingKey
+from infra.messaging.broker import broker
+from infra.messaging.events.order_created import OrderCreatedEvent
+from infra.messaging.exchanges import exchange_orders
 
 async def publisher_order_created(data: OrderCreatedEvent):
     await broker.publish(
