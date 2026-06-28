@@ -1,27 +1,35 @@
 import asyncio
 from app.integrations.payment_integration import PaymentIntegration
 
+MERCADO = 'APP_USR-5619885490238631-050516-b3e7114bf83014013078286744156ea1-3381554054'
 
-async def payment():
+integration = PaymentIntegration(token=MERCADO)
 
+
+async def test_payment():
     payment_payload = {
-        "total_amount": "1.00",
+        "total_amount": "1.00", 
         "payment_method": "pix",
         "checkout_group_id": 12456,
         "buyer_email": "g.renata@testuser.com",
         "buyer_first_name": "Renata",
-        "buyer_last_name": "Gomes",
+        "buyer_last_name": "Gomes"
     }
 
-    print('Iniciando a requisição para realizar um pix...')
+    print('\n[1/2] Iniciando a requisição para realizar um pix...')
 
     try:
-        result = await PaymentIntegration.generate_payment(payment_payload)
+        # Agora chamamos a partir da instância
+        result = await integration.generate_payment(payload=payment_payload)
         print("Sucesso! Dados retornados:")
         print(result)
+        
+        order_id = result.get("id") if result else None
+        return order_id
     
     except Exception as e:
-        print(f"Erro durante o teste {e}")
+        print(f"Erro durante o teste de criação: {e}")
+        return None
 
 
 async def verify():
@@ -40,9 +48,9 @@ async def verify():
 
 
 if __name__ == "__main__":
-    # print("Teste - Pagamento via pix")
-    # asyncio.run(payment())
-    print("Teste - Status de pagamento")
-    asyncio.run(verify())
+    print("Teste - Pagamento via pix")
+    asyncio.run(test_payment())
+    # print("Teste - Status de pagamento")
+    # asyncio.run(verify())
 
 
