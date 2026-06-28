@@ -18,6 +18,9 @@ class OrderRepository:
 
         return order
 
+    async def get_by_id(self, order_id):
+        return await self.session.get(Order, order_id)
+
     async def get_order_artisan(self, order_id: int, store_id: str):
         query = select(Order).where(Order.order_id == order_id).where(Order.store_id == store_id).where(Order.status != 'PENDING').options(selectinload(Order.items))
 

@@ -8,8 +8,8 @@ from app.core.config import settings
 import hmac
 import hashlib
 from fastapi import Request
-from ..messaging.publishers.order_paid import publisher_order_paid 
-from ..messaging.events.order_paid import OrderPaidEvent, OrderItemEvent
+from infra.messaging.publishers.order_paid import publisher_order_paid 
+from infra.messaging.events.order_paid import OrderPaidEvent, OrderItemEvent
 
 
 class WebhookService:
@@ -128,7 +128,7 @@ class WebhookService:
             await self.session.commit()
 
             for event in events_to_publish:
-                publisher_order_paid(event)
+                await publisher_order_paid(event)
 
             return {"status": "successo", "reason": "Pedidos atualizados e fundos distribuídos."}
 

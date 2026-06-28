@@ -1,3 +1,5 @@
+from infra.messaging.events.order_created import OrderCreatedEvent
+from infra.messaging.publishers.order_created import publisher_order_created
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.order import OrderItem, OrderStatus
 from app.repositories.order_repository import OrderRepository
@@ -18,6 +20,7 @@ VALID_TRANSITIONS = {
     OrderStatus.REFUSED: [],
     OrderStatus.PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
     OrderStatus.SHIPPED: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+    OrderStatus.EXPIRED: [],
     OrderStatus.DELIVERED: [],
     OrderStatus.CANCELLED: []
 }
@@ -63,7 +66,29 @@ class OrderService:
         order_updated = await self.order_repo.update_status_order(order)
 
         return order_updated
-        
+
+    async def expired(self, order_id: int):
+        order = await self.order_repo.get_by_id(order_id)
+
+        if not order:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Pedido não encontrado."
+            )
+        print("aqui")
+
+        if order.status != OrderStatus.PENDING:
+            print("entrou no return")
+            return order
+
+        order.status = OrderStatus.EXPIRED
+        print(order)
+        print(order.status)
+
+        await self.session.commit()
+        await self.session.refresh(order)
+
+        return order  
 
     async def get_order_artisan_by_id(self, order_id: int, token: str):
         store_id = await self.catalog_inte.get_store_id(token)
@@ -118,6 +143,7 @@ class OrderService:
                 'state': address_data.get('state'),
                 'zip_code': address_data.get('zip_code')
             } 
+            all_order_events = []
 
             saved_quotes = await self.shipping_repo.get_freight(user_id=user_id)
 
@@ -201,7 +227,7 @@ class OrderService:
                 )
 
                 order_items_create = []
-
+                
                 for item in items_list:
                     variant_id = item["product_variant_id"]
                     unit_price = Decimal(str(catalog_data[variant_id]['unit_price']))
@@ -214,9 +240,17 @@ class OrderService:
                             unit_price=unit_price 
                         )
                     )
-
+                    data = OrderCreatedEvent(
+                        product_variant_id=variant_id,
+                        order_id=new_order.order_id,
+                        quantity=item["quantity"]
+                    )
+                    all_order_events.append(data)
                 await self.order_repo.create_order_items(items_data=order_items_create)
             
+            for event in all_order_events:
+                await publisher_order_created(event)
+
             await self.session.commit()
 
             try: 
@@ -261,6 +295,8 @@ class OrderService:
                 raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
                 status_code=HTTPStatus.BAD_GATEWAY, 
