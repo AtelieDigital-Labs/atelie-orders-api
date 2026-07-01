@@ -18,9 +18,8 @@ async def process_outbox_messages():
                 if logs:
                     for log in logs:
                         try:
-                            print(log.payload)
                             await publisher_log_register(message=log.payload)
-                            
+
                             log.processed = True
                             
                             trigger_logger.info(f"Log {log.log_id} enviado para a mensageria com sucesso")
