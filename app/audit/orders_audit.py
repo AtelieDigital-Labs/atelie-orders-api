@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm.attributes import get_history
 from app.core.context import current_user_id
 from app.core.logger import setup_trigger_logger
+from infra.messaging.events.log_register import AuditLogPayload
 
 
 logger = setup_trigger_logger()
