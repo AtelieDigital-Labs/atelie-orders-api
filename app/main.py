@@ -9,7 +9,7 @@ from app.core.config import settings
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from app.core.lifespan import lifespan
-import app.events.orders_events  
+import app.audit.orders_audit  
 
 
 if sys.platform == 'win32':
