@@ -7,6 +7,10 @@ from sqlalchemy.orm import Mapper
 from datetime import datetime, timezone
 from sqlalchemy.orm.attributes import get_history
 from app.core.context import current_user_id
+from app.core.logger import setup_trigger_logger
+
+
+logger = setup_trigger_logger()
 
 @event.listens_for(Order, 'after_insert')
 def generate_log_create_order(mapper: Mapper, connection: Connection, target: Order):
@@ -40,6 +44,8 @@ def generate_log_create_order(mapper: Mapper, connection: Connection, target: Or
             processed = False
         )
     )
+
+    logger.info(f"[INSERT] Gatilho acionado com sucesso para o recurso Order (ID: {target.order_id}). Log salvo na tabela Outbox.")
 
 @event.listens_for(Order, 'before_update')
 def generate_log_update_order(mapper: Mapper, connection: Connection, target: Order):
@@ -92,4 +98,8 @@ def generate_log_update_order(mapper: Mapper, connection: Connection, target: Or
             payload = log_payload,
             processed = False
         )
+    )
+
+    logger.info(
+        f" [UPDATE] Gatilho acionado com sucesso. Status alterado de {old_value_str} para {new_value_str} no pedido {target.order_id}."
     )
