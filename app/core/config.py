@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     WEBHOOK_SECRET: str
 
     DATABASE_URL: str
+    DATABASE_SCHEMA: str = 'orders'
 
     REDIS_URL: str
+    MESSAGING_URL: str
 
     CATALOG_API_BASE_URL: str
     ACCOUNTS_API_BASE_URL: str

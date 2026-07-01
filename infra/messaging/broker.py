@@ -1,3 +1,6 @@
 from faststream.rabbit import RabbitBroker
+from faststream import FastStream
+from app.core.config import settings
 
-broker = RabbitBroker("amqp://guest:guest@rabbitmq:5672/")
+broker = RabbitBroker(settings.MESSAGING_URL)
+app = FastStream(broker)

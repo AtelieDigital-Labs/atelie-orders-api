@@ -1,37 +1,4 @@
 services:
-  order_database:
-    image: postgres
-    container_name: order_database
-    restart: always
-    volumes:
-      - pgdata:/var/lib/postgresql/
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "${DB_PORT}:5432"
-    healthcheck: 
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-  
-  cart_database:
-    image: redis:alpine
-    container_name: cart_database
-    restart: always
-    command: redis-server --requirepass AtelieV20
-    volumes:
-      - rdata:/data
-    ports:
-      - "${DB_PORT_REDIS}:6379"
-    healthcheck: # Adicionado com a senha para satisfazer a API
-      test: ["CMD", "redis-cli", "-a", "AtelieV20", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   order_api:
     build: .
     container_name: order_service_api
@@ -39,24 +6,11 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - default
       - atelie-network
     volumes:
       - .:/app
-    depends_on:
-      order_database:
-        condition: service_healthy
-      cart_database:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql+psycopg://${DB_USER}:${DB_PASS}@order_database:5432/${DB_NAME}
-      REDIS_URL: redis://:AtelieV20@cart_database:6379/0
     env_file:
       - .env
-
-volumes:
-  pgdata:
-  rdata:
 
 networks:
   atelie-network:

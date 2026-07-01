@@ -2,7 +2,7 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 from alembic import context
 
@@ -59,12 +59,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
+    """Run migrations in 'online' mode."""
+    
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -72,8 +68,20 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # 1. Cria o schema se ele não existir
+        connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {settings.DATABASE_SCHEMA};"))
+    
+        # 2. Força a conexão atual a olhar para o schema correto
+        connection.execute(text(f"SET search_path TO {settings.DATABASE_SCHEMA};"))
+        
+        # 3. CRUCIAL: Salva as alterações acima antes de entregar a conexão para o Alembic
+        connection.commit()
+
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata,
+            include_schemas=False, # Mude para False! O search_path já garante o isolamento perfeito.
+            version_table_schema=settings.DATABASE_SCHEMA, 
         )
 
         with context.begin_transaction():
