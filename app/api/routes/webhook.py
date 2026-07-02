@@ -7,11 +7,13 @@ from app.api.dependencies.webhook import get_webhook_service
 
 router = APIRouter(prefix="/api/v1/orders/webhook", tags=["Webhooks"])
 
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.post("/mercadopago")
 async def mercadopago_webhook(
     request: Request, 
+    session: SessionDep,
     service: WebhookService = Depends(get_webhook_service)
 ):
     """
