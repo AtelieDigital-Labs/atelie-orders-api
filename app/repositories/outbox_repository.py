@@ -10,6 +10,6 @@ class OutboxRepository:
     async def get_log(self):
         query = select(LogOutbox).where(LogOutbox.processed==False).order_by(LogOutbox.created_at).limit(50)
         result = await self.session.execute(query)
-        logs = result.scalars.all()
+        logs = result.scalars(result).all()
 
         return logs
