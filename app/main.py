@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from app.core.lifespan import lifespan
 import app.audit.orders_audit  
+import app.core.logger
 
 
 if sys.platform == 'win32':
