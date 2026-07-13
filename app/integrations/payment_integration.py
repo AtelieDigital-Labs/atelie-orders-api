@@ -14,7 +14,6 @@ class PaymentIntegration:
         headers = {
             "Authorization": f"Bearer {self.token}",
             "X-Idempotency-Key": str(uuid.uuid4()), 
-            # descobrir onde é "X-platform-id": "6268984155367478",
             "Content-Type": "application/json" 
         }
 
@@ -33,7 +32,7 @@ class PaymentIntegration:
                             "type": "bank_transfer",
                             "statement_descriptor": "COMPRA NO ATELIÊ DIGITAL"
                         },
-                        "expiration_time": "P3Y6M4DT12H30M5S" 
+                        "expiration_time": "PT15M" 
                     }
                 ]
             },

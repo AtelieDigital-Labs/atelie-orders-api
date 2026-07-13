@@ -333,7 +333,6 @@ class OrderService:
         }
     
     async def paid_order_pending(self, order_data: OrderPaymentRequest, token: str):
-        orders = []
         group_id = str(order_data.checkout_group_id)
 
         client_data = await self.accounts_inte.get_data_user(token=token)
@@ -347,15 +346,46 @@ class OrderService:
             )
         
         total_ammount = sum(order.price + order.shipping_cost for order in orders)
-        
+
+        products_ids = [
+            item.product_variant_id for order in orders for item in order.items
+        ]
+
+        catalog_data = await self.catalog_inte.fetch_all_prices(products_ids)
+
+        payment_items = []
+
+        for order in orders:
+            for item in order.items:
+                variant_id = item.product_variant_id
+                catalog_info = catalog_data.get(variant_id, {})
+
+                payment_items.append(
+                    {
+                        "title": catalog_info.get("title", f"Produto {variant_id}"),
+                        "quantity": int(item.quantity),
+                        "unit_price": float(item.unit_price),
+                    }
+                )
+
+            if order.shipping_cost > 0:
+                payment_items.append(
+                    {
+                        "title": "Custo de envio",
+                        "quantity": 1,
+                        "unit_price": float(order.shipping_cost),
+                    }
+                )
+            
         try:
             payment_payload = {
                 "total_amount": str(float(total_ammount)),
                 "payment_method": "pix",
                 "checkout_group_id": group_id,
-                "buyer_email": client_data['email'],
-                "buyer_first_name": client_data['first_name'],
-                "buyer_last_name": client_data['last_name'],
+                "buyer_email": client_data["email"],
+                "buyer_first_name": client_data["first_name"],
+                "buyer_last_name": client_data["last_name"],
+                "items": payment_items,  
             }
 
             mp_response = await self.payment_inte.generate_payment(payload=payment_payload)
