@@ -63,16 +63,9 @@ class WebhookService:
 
         meu_hash = hmac_obj.hexdigest()
 
-        # print("\n--- DEBUG HMAC ---")
-        # print(f"Secret Lida da Memória: '{WebhookService.MP_WEBHOOK_SECRET}'")
-        # print(f"Manifest gerado: {manifest}")
-        # print(f"Hash do Mercado Pago (v1): {hash_v1}")
-        # print(f"Meu Hash Calculado: {meu_hash}")
-        # print("------------------\n")
         
         if meu_hash != hash_v1:
             print("Tentativa de fraude detectada: Assinatura HMAC inválida.")
-            #return {"status": "erro", "reason": "Assinatura HMAC inválida"}
         
         payload = await request.json()
         action = payload.get("action", "")

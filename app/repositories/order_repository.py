@@ -61,6 +61,6 @@ class OrderRepository:
         return result.scalars().all()
 
     async def get_order_group_pending(self, group_id: str):
-        query = select(Order).where(Order.checkout_group_id == group_id).where(Order.status == 'PENDING')
+        query = select(Order).where(Order.checkout_group_id == group_id).where(Order.status == 'PENDING').options(selectinload(Order.items))
         result = await self.session.execute(query)
         return result.scalars().all()
