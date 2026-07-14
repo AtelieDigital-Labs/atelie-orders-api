@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     CATALOG_API_BASE_URL: str
     ACCOUNTS_API_BASE_URL: str
+
+    NGROK_TOKEN: str
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
