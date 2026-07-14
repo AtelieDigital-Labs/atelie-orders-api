@@ -12,6 +12,20 @@ services:
     env_file:
       - .env
 
+  ngrok-orders:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_tunnel
+    restart: always
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_TOKEN}
+    command: "http order_api:8000"
+    ports:
+      - "4040:4040"
+    networks:
+      - atelie-network
+    depends_on:
+      - order_api
+
 networks:
   atelie-network:
     external: true
