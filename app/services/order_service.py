@@ -114,8 +114,8 @@ class OrderService:
 
         return order
     
-    async def get_all_orders(self, user_id: str):
-        return await self.order_repo.get_all_orders(user_id)
+    async def get_all_orders(self, user_id: str, status: OrderStatus | None = None):
+        return await self.order_repo.get_all_orders(user_id, status = status)
 
 
     async def create_new_order(self, order_data: OrderCheckoutRequest, user_id: str, token: str):

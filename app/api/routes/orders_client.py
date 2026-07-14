@@ -2,17 +2,18 @@ from http import HTTPStatus
 
 from fastapi_pagination import Page
 from app.schemas.order import OrderCheckoutRequest, OrderCreatedResponse, OrderRead, OrderResponse, OrderPaymentRequest
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.services.order_service import OrderService
 from app.api.dependencies.order import get_order_service
 from app.api.dependencies.autenticator import verify_user
-
+from app.models.order import OrderStatus
 
 router = APIRouter(prefix='/api/v1/orders', tags=['Users order'])
 
 
 @router.get('/', status_code=HTTPStatus.OK, response_model=Page[OrderResponse])
 async def list_all_orders(
+    status: OrderStatus | None = Query(None),
     user_auth: dict = Depends(verify_user),
     service: OrderService = Depends(get_order_service)
 ):
@@ -22,7 +23,7 @@ async def list_all_orders(
 
     user_id = user_auth["user_id"]
 
-    return await service.get_all_orders(user_id=user_id)
+    return await service.get_all_orders(user_id=user_id,status=status)
 
 
 @router.get('/{order_id}', status_code=HTTPStatus.OK, response_model= OrderRead)
