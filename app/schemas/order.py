@@ -49,6 +49,7 @@ class OrderRead(BaseModel):
     tracking_code: Optional[str] = None
     payment_method: str
     store_id: str
+    checkout_group_id: str 
     created_at: datetime
     shipping_address: ShippingAddressRead
     items: list[OrderItemRead]
@@ -58,6 +59,7 @@ class OrderRead(BaseModel):
 class OrderResponse(BaseModel):
     order_id: int
     status: OrderStatus
+    checkout_group_id: str 
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
