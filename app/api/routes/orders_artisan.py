@@ -35,7 +35,7 @@ async def list_order(
 
    return await service.get_order_artisan_by_id(order_id=order_id, token=token)
 
-@router.patch('/{oder_id}/status', status_code=HTTPStatus.OK, response_model=OrderArtisanRead)
+@router.patch('/{order_id}/status', status_code=HTTPStatus.OK, response_model=OrderArtisanRead)
 async def update_status(
     order_id: int, 
     update_status: OrderArtisanStatusUpdate, 
