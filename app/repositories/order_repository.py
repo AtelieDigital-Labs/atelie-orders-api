@@ -14,10 +14,14 @@ class OrderRepository:
 
     async def update_status_order(self, order: Order):
         await self.session.commit()
-
-        await self.session.refresh(order)
-
-        return order
+        
+        query = (
+            select(Order)
+            .where(Order.order_id == order.order_id)
+            .options(selectinload(Order.items))
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
 
     async def get_by_id(self, order_id):
         return await self.session.get(Order, order_id)
