@@ -314,7 +314,7 @@ class OrderService:
                 payment_data = payment_obj['payment_method']
                 pix = payment_data['qr_code_base64']
                 pix_copia_cola = payment_data['qr_code']
-                expires_at = payment_obj.get('date_of_expiration')
+                expires_at = payment_obj['date_of_expiration']
                 if not expires_at:
                     from datetime import datetime, timedelta, timezone
                     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
@@ -411,7 +411,7 @@ class OrderService:
                 payment_data = payment_obj['payment_method']
                 pix_copia_cola = payment_data['qr_code']
                 pix = payment_data['qr_code_base64']
-                expires_at = payment_obj.get('date_of_expiration')
+                expires_at = payment_obj['date_of_expiration']
                 if not expires_at:
                     from datetime import datetime, timedelta, timezone
                     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
