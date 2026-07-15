@@ -34,10 +34,17 @@ class OrderCheckoutRequest(BaseModel):
     payment_method: str
     shipping_method: str = Field(..., description="Nome da opção de frete escolhida (ex: Econômico, Expresso).")    
 
+class PaymentInfo(BaseModel):
+    id: str
+    qr_code_base64: str
+    qr_code: str
+    expires_at: datetime
+
 class OrderCreatedResponse(BaseModel):
     message: str
     checkout_group_id: str
-    payment_info: dict
+    order_ids: list[int]
+    payment_info: PaymentInfo
 
 
 class OrderRead(BaseModel):

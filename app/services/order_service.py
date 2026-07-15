@@ -144,6 +144,7 @@ class OrderService:
                 'zip_code': address_data.get('zip_code')
             } 
             all_order_events = []
+            order_ids = []
 
             saved_quotes = await self.shipping_repo.get_freight(user_id=user_id)
 
@@ -244,6 +245,8 @@ class OrderService:
                     order_data=order_payload
                 )
 
+                order_ids.append(new_order.order_id)  
+
                 order_items_create = []
                 
                 for item in items_list:
@@ -307,9 +310,14 @@ class OrderService:
             
             try:
                 mercadopago_id = mp_response['id']
-                payment_data = mp_response['transactions']['payments'][0]['payment_method']
+                payment_obj = mp_response['transactions']['payments'][0]
+                payment_data = payment_obj['payment_method']
                 pix = payment_data['qr_code_base64']
                 pix_copia_cola = payment_data['qr_code']
+                expires_at = payment_obj.get('date_of_expiration')
+                if not expires_at:
+                    from datetime import datetime, timedelta, timezone
+                    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
             except (KeyError, IndexError) as e:
                 raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
 
@@ -323,15 +331,17 @@ class OrderService:
             )
 
         return {
-            'message':'Pedido gerado', 
-            'checkout_group_id':str(group_id),
+            'message': 'Pedido gerado',
+            'checkout_group_id': str(group_id),
+            'order_ids': order_ids,
             'payment_info': {
                 'id': mercadopago_id,
                 'qr_code_base64': pix,
-                'qr_code': pix_copia_cola
+                'qr_code': pix_copia_cola,
+                'expires_at': expires_at,
             }
         }
-    
+            
     async def paid_order_pending(self, order_data: OrderPaymentRequest, token: str):
         group_id = str(order_data.checkout_group_id)
 
@@ -344,6 +354,8 @@ class OrderService:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail="Pedido não encontrado"
             )
+        
+        order_ids = [order.order_id for order in orders]
         
         total_ammount = sum(order.price + order.shipping_cost for order in orders)
 
@@ -395,12 +407,17 @@ class OrderService:
             
             try:
                 mercadopago_id = mp_response['id']
-                payment_data = mp_response['transactions']['payments'][0]['payment_method']
+                payment_obj = mp_response['transactions']['payments'][0]
+                payment_data = payment_obj['payment_method']
                 pix_copia_cola = payment_data['qr_code']
                 pix = payment_data['qr_code_base64']
+                expires_at = payment_obj.get('date_of_expiration')
+                if not expires_at:
+                    from datetime import datetime, timedelta, timezone
+                    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
             except (KeyError, IndexError) as e:
                 raise Exception(f"Estrutura do PIX não encontrada no retorno do MP. Erro: {e}. Retorno: {mp_response}")
-
+            
         except Exception as e:
             print(f"🚨 ERRO REAL CAPTURADO: {e}")
             raise HTTPException(
@@ -409,11 +426,13 @@ class OrderService:
             )
 
         return {
-            'message':'Pagamento gerado', 
+            'message': 'Pagamento gerado',
             'checkout_group_id': group_id,
+            'order_ids': order_ids,         
             'payment_info': {
                 'id': mercadopago_id,
                 'qr_code_base64': pix,
-                'qr_code': pix_copia_cola
+                'qr_code': pix_copia_cola,
+                'expires_at': expires_at,
             }
         }
