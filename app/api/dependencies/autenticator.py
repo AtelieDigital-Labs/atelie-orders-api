@@ -13,7 +13,7 @@ async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(securi
     token = credentials.credentials
     
     try: 
-        dic = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM,])
+        dic = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = dic.get("user_id")
         
         if user_id is None:
@@ -34,7 +34,8 @@ async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(securi
             status_code=HTTPStatus.UNAUTHORIZED,
             detail='Token inválido',
         )
-    except JWTError:
+    except JWTError as e:
+        print(f" [AUTH ERROR] Falha no decode do JWT: {str(e)}")
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
             detail='Token inválido',

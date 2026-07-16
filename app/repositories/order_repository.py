@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.order import Order, OrderItem
+from app.models.order import Order, OrderItem, OrderStatus
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.schemas.order import OrderArtisanStatusUpdate
+
 
 
 
@@ -13,10 +14,14 @@ class OrderRepository:
 
     async def update_status_order(self, order: Order):
         await self.session.commit()
-
-        await self.session.refresh(order)
-
-        return order
+        
+        query = (
+            select(Order)
+            .where(Order.order_id == order.order_id)
+            .options(selectinload(Order.items))
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
 
     async def get_by_id(self, order_id):
         return await self.session.get(Order, order_id)
@@ -38,8 +43,11 @@ class OrderRepository:
         order = await self.session.execute(query)
         return order.scalars().first()
     
-    async def get_all_orders(self, user_id: str):
-        query = select(Order).where(Order.user_id == user_id).order_by(Order.created_at.desc())
+    async def get_all_orders(self, user_id: str, status: OrderStatus | None = None):
+        query = select(Order).where(Order.user_id == user_id)
+        if status:
+            query = query.where(Order.status == status)
+        query = query.order_by(Order.created_at.desc())
         
         return await paginate(self.session, query)
 

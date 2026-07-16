@@ -131,7 +131,14 @@ class CatalogIntegration:
     async def search_price(self, client: AsyncClient, product_variant_id: str):
         response = await client.get(f'/{product_variant_id}')
 
+        if response.status_code == 404:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, 
+                detail=f'Variante {product_variant_id} não encontrada.'
+            )
+
         response.raise_for_status()
+
 
         data = response.json()
         
