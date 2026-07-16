@@ -1,0 +1,17 @@
+services:
+  order_api:
+    build: .
+    container_name: order_service_api
+    image: atelie_order_api
+    ports:
+      - "8000:8000"
+    networks:
+      - atelie-network
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+networks:
+  atelie-network:
+    external: true

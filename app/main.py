@@ -1,9 +1,36 @@
-# app/main.py
+import asyncio
+import sys
+from app.api.routes.orders_client import router as order_router
+from app.api.routes.checkout import router as checkout_router
+from app.api.routes.orders_artisan import router as artisan_router
+from app.api.routes.carts import router as cart_router
+from app.api.routes.webhook import router as webhook_router
+from app.core.config import settings
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
+from app.core.lifespan import lifespan
+import app.audit.orders_audit  
+import app.core.logger
+
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 app = FastAPI(
-    title="Ateliê Digital - Orders API",
-    description="Microsserviço de gerenciamento de pedidos.",
-    version="0.1.0",
+    title=settings.PROJECT_NAME,
+    description=settings.DESCRIPTION,
+    version=settings.VERSION,
+    lifespan=lifespan
 )
 
+
+app.include_router(cart_router)
+app.include_router(checkout_router)
+app.include_router(order_router)
+app.include_router(artisan_router)
+app.include_router(webhook_router)
+
+
+
+add_pagination(app)
