@@ -1,0 +1,13 @@
+name: Python Quality Ci
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  Quality-CI:
+    uses: AtelieDigital-Labs/Atelie-Digital-2.0/.github/workflows/python-quality.yml@main
+    with:
+      python-version: "3.13"
